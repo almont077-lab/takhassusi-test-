@@ -1,8 +1,4 @@
-import base64
-from io import BytesIO
-
 import streamlit as st
-from groq import Groq
 
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
 
@@ -191,7 +187,7 @@ feature_columns = st.columns(3)
 feature_cards = [
     ("🧭", "اختر مسارك", "أكاديمي أو مهني وتقني، واستكشف الخيارات المناسبة لكل مسار."),
     ("📊", "أدخل درجاتك", "المعدل ودرجات المواد تساعد على ترتيب الاقتراحات بشكل أوضح."),
-    ("✨", "اكتشف الأنسب", "شاهد أفضل 20 اقتراحًا، أو اطلب من Groq ترتيبها حسب اهتماماتك."),
+    ("✨", "اكتشف الأنسب", "شاهد أفضل 20 اقتراحًا، أو اطلب من Gemini ترتيبها حسب اهتماماتك."),
 ]
 for column, (icon, title, description) in zip(feature_columns, feature_cards):
     with column:
@@ -201,21 +197,21 @@ for column, (icon, title, description) in zip(feature_columns, feature_cards):
         )
 st.write("")
 
-# Groq API key is read from Streamlit Secrets on the hosted app.
+# Gemini API key is read from Streamlit Secrets on the hosted app.
 with st.sidebar:
     st.markdown('<div class="assistant-badge">💬</div>', unsafe_allow_html=True)
     st.subheader("مساعد التخصص الذكي")
-    st.caption("يستخدم Groq. المفتاح المحفوظ في Secrets لا يظهر للزوار.")
+    st.caption("يستخدم Gemini. المفتاح المحفوظ في Secrets لا يظهر للزوار.")
     try:
-        saved_api_key = st.secrets.get("GROQ_API_KEY", "")
+        saved_api_key = st.secrets.get("GEMINI_API_KEY", "")
     except Exception:
         saved_api_key = ""
     if saved_api_key:
         api_key = saved_api_key
-        st.success("مفتاح Groq محفوظ ويعمل تلقائيًا")
+        st.success("مفتاح Gemini محفوظ ويعمل تلقائيًا")
     else:
         api_key = st.text_input(
-            "مفتاح Groq للاختبار", type="password",
+            "مفتاح Gemini للاختبار", type="password",
             help="للتجربة المحلية فقط؛ للموقع المنشور احفظه في Streamlit Secrets.",
         )
     if "chat" not in st.session_state:
@@ -229,32 +225,33 @@ with st.sidebar:
     if ask and question.strip():
         q = question.strip()
         try:
+            from google import genai
             if not api_key:
-                answer = "لم يُضف مفتاح Groq بعد. احفظه في Secrets أو أدخله للتجربة المحلية."
+                answer = "لم يُضف مفتاح Gemini بعد. أدخله للتجربة أو احفظه في Streamlit Secrets."
             else:
-                client = Groq(api_key=api_key)
+                client = genai.Client(api_key=api_key)
                 prior = st.session_state.chat[-8:]
-                messages = [{
-                    "role": "system",
-                    "content": (
+                transcript = "\n".join(
+                    ("الطالب" if role == "user" else "المساعد") + ": " + message
+                    for role, message in prior
+                )
+                transcript += "\nالطالب: " + q
+                response = client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=(
                         "أنت مرشد أكاديمي لطالب في سلطنة عُمان. أجب بالعربية السهلة وباختصار. "
                         "ساعده على التفكير في التخصصات ولا تدّع معرفة شروط قبول محدثة أو ضمان القبول؛ "
-                        "ذكّره بالتحقق من دليل القبول الرسمي عند الحاجة."
+                        "ذكّره بالتحقق من دليل القبول الرسمي عند الحاجة.\n\n" + transcript
                     ),
-                }]
-                messages.extend({"role": role, "content": message} for role, message in prior)
-                messages.append({"role": "user", "content": q})
-                response = client.chat.completions.create(
-                    model="qwen/qwen3.8-27b", messages=messages, max_completion_tokens=900
                 )
-                answer = (response.choices[0].message.content or "").strip() or "لم يصلني رد. جرّب صياغة السؤال مرة أخرى."
+                answer = (response.text or "").strip() or "لم يصلني رد. جرّب صياغة السؤال مرة أخرى."
         except ImportError:
-            answer = "مكتبة Groq غير مثبتة. أعد تشغيل البرنامج بعد تحديث requirements.txt."
+            answer = "مكتبة Gemini غير مثبتة. أعد تشغيل البرنامج بعد تحديث requirements.txt."
         except Exception as error:
-            answer = "تعذر الاتصال بـ Groq. تأكد من المفتاح والإنترنت وحدود الاستخدام المجاني. التفاصيل: " + str(error)[:300]
+            answer = "تعذر الاتصال بـ Gemini. تأكد من المفتاح والإنترنت وحدود الاستخدام في Google AI Studio. التفاصيل: " + str(error)[:300]
         st.session_state.chat.extend([("user", q), ("assistant", answer)])
         st.rerun()
-    st.caption("لا تضع المفتاح في ملف GitHub عام. حفظه في Secrets يحميه من الظهور للزوار.")
+    st.caption("لا تضع المفتاح في ملف GitHub عام. احفظه في Secrets حتى لا يظهر للزوار.")
 
 st.subheader("ابدأ باختيار مسارك الدراسي")
 study_path = st.radio("المسار", ["أكاديمي", "مهني وتقني"], horizontal=True)
@@ -286,7 +283,7 @@ if study_path == "أكاديمي":
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="academic_custom_interest", placeholder="مثال: تصميم الألعاب")
     if custom_interest.strip() and custom_interest.strip() not in interests:
         interests.append(custom_interest.strip())
-    st.caption("المجال الذي تكتبه يُرسل إلى Groq عند استخدام ترتيب الذكاء الاصطناعي.")
+    st.caption("المجال الذي تكتبه يُرسل إلى Gemini عند استخدام ترتيب الذكاء الاصطناعي.")
     submitted = st.button("اعرض التخصصات المناسبة", type="primary", use_container_width=True)
 else:
     st.caption("يضم المسار تخصصات في تقنية المعلومات وريادة الأعمال والسفر والسياحة، والهندسة والصناعة. التخصصات المتاحة تختلف حسب المدرسة والمحافظة.")
@@ -308,23 +305,23 @@ else:
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="vocational_custom_interest", placeholder="مثال: صيانة الطائرات")
     if custom_interest.strip() and custom_interest.strip() not in interests:
         interests.append(custom_interest.strip())
-    st.caption("المجال الذي تكتبه يُرسل إلى Groq عند استخدام ترتيب الذكاء الاصطناعي.")
+    st.caption("المجال الذي تكتبه يُرسل إلى Gemini عند استخدام ترتيب الذكاء الاصطناعي.")
     submitted = st.button("رتّب التخصصات المهنية المناسبة", type="primary", use_container_width=True)
 
 st.markdown("### ترتيب أذكى بالذكاء الاصطناعي")
-st.caption("يرتب Groq التخصصات حسب معدلك ودرجات المواد واهتماماتك. قد تنفد الحصة المجانية إذا استخدمه زوار كثيرون.")
+st.caption("يرتب Gemini التخصصات حسب معدلك ودرجات المواد واهتماماتك. قد تنفد الحصة المجانية إذا استخدمه زوار كثيرون.")
 ai_rank_requested = st.button("رتّب الاقتراحات بالذكاء الاصطناعي", use_container_width=True)
 if ai_rank_requested:
     st.session_state.pop("ai_rank_result", None)
     if not api_key:
-        st.session_state["ai_rank_result"] = "أدخل مفتاح Groq في القائمة الجانبية أولًا."
+        st.session_state["ai_rank_result"] = "أدخل مفتاح Gemini في القائمة الجانبية أولًا."
     elif study_path == "أكاديمي" and len(strong_subjects) != 3:
         st.session_state["ai_rank_result"] = "اختر ثلاث مواد اختيارية أولًا، وبينها مادة علمية واحدة على الأقل."
     elif study_path == "أكاديمي" and not (set(strong_subjects) & set(SCIENCE_SUBJECTS)):
         st.session_state["ai_rank_result"] = "اختر مادة علمية واحدة على الأقل: أحياء أو كيمياء أو فيزياء أو علوم بيئية."
     else:
         try:
-            from groq import Groq
+            from google import genai
 
             grades_summary = "، ".join(
                 f"{subject}: {grade}%" for subject, grade in subject_grades.items()
@@ -364,18 +361,17 @@ if ai_rank_requested:
                 "أجب بالعربية الواضحة، واكتب لكل تخصص سببًا قصيرًا مرتبطًا ببيانات الطالب. "
                 "لا تضمن القبول، واختم بالتنبيه إلى مراجعة شروط القبول الرسمية."
             )
-            client = Groq(api_key=api_key)
+            client = genai.Client(api_key=api_key)
             with st.spinner("الذكاء الاصطناعي يرتب التخصصات..."):
-                response = client.chat.completions.create(
-                    model="qwen/qwen3.8-27b",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_completion_tokens=1800,
+                response = client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=prompt,
                 )
-            st.session_state["ai_rank_result"] = (response.choices[0].message.content or "ما وصلني ترتيب. حاول مرة أخرى.").strip()
+            st.session_state["ai_rank_result"] = (response.text or "ما وصلني ترتيب. حاول مرة أخرى.").strip()
         except ImportError:
-            st.session_state["ai_rank_result"] = "مكتبة Groq غير مثبتة. ثبّت المكتبات من requirements.txt ثم شغّل البرنامج من جديد."
+            st.session_state["ai_rank_result"] = "مكتبة Gemini غير مثبتة. ثبّت المكتبات من requirements.txt ثم شغّل البرنامج من جديد."
         except Exception as error:
-            st.session_state["ai_rank_result"] = "تعذر الاتصال بـ Groq. راجع المفتاح والإنترنت وحدود الاستخدام في Groq. التفاصيل: " + str(error)[:300]
+            st.session_state["ai_rank_result"] = "تعذر الاتصال بـ Gemini. راجع المفتاح والإنترنت وحدود الاستخدام في Google AI Studio. التفاصيل: " + str(error)[:300]
 if st.session_state.get("ai_rank_result"):
     st.markdown(st.session_state["ai_rank_result"])
 
@@ -390,18 +386,14 @@ if rank_image:
     if not uploaded_image:
         st.warning("ارفع صورة قائمة التخصصات أولًا.")
     elif not api_key:
-        st.warning("أضف مفتاح Groq في Secrets أو أدخله للتجربة المحلية أولًا.")
+        st.warning("أضف مفتاح Gemini في Secrets أو أدخله للتجربة المحلية أولًا.")
     else:
         try:
-            from groq import Groq
+            from google import genai
             from PIL import Image
 
             image = Image.open(uploaded_image).convert("RGB")
-            image.thumbnail((1600, 1600))
-            image_buffer = BytesIO()
-            image.save(image_buffer, format="JPEG", quality=85, optimize=True)
-            image_data = base64.b64encode(image_buffer.getvalue()).decode("utf-8")
-            client = Groq(api_key=api_key)
+            client = genai.Client(api_key=api_key)
             grades_summary = "، ".join(
                 f"{subject}: {grade}%" for subject, grade in subject_grades.items()
             ) or "لم يدخل درجات مواد"
@@ -427,22 +419,13 @@ if rank_image:
                 "ونبّه إلى مراجعة شروط القبول الرسمية."
             )
             with st.spinner("أقرأ الصورة وأرتّب التخصصات..."):
-                response = client.chat.completions.create(
-                    model="qwen/qwen3.8-27b",
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_data}"
-                            }},
-                        ],
-                    }],
-                    max_completion_tokens=1400,
+                response = client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=[prompt, image],
                 )
-            st.session_state["image_ranking"] = (response.choices[0].message.content or "ما قدرت أقرأ التخصصات بوضوح.").strip()
+            st.session_state["image_ranking"] = (response.text or "ما قدرت أقرأ التخصصات بوضوح.").strip()
         except Exception as error:
-            st.session_state["image_ranking"] = "تعذر ترتيب الصورة. تأكد من المفتاح والإنترنت وحدود الاستخدام، ثم حاول مرة أخرى. التفاصيل: " + str(error)[:300]
+            st.session_state["image_ranking"] = "تعذر ترتيب الصورة. تأكد من المفتاح والإنترنت، ثم حاول مرة أخرى. التفاصيل: " + str(error)[:300]
 if st.session_state.get("image_ranking"):
     st.markdown(st.session_state["image_ranking"])
 
