@@ -206,14 +206,11 @@ with st.sidebar:
         saved_api_key = st.secrets.get("GEMINI_API_KEY", "")
     except Exception:
         saved_api_key = ""
-    if saved_api_key:
-        api_key = saved_api_key
+    api_key = saved_api_key
+    if api_key:
         st.success("مفتاح Gemini محفوظ ويعمل تلقائيًا")
     else:
-        api_key = st.text_input(
-            "مفتاح Gemini للاختبار", type="password",
-            help="للتجربة المحلية فقط؛ للموقع المنشور احفظه في Streamlit Secrets.",
-        )
+        st.warning("أضف المفتاح مرة واحدة من Manage app ← Settings ← Secrets باسم GEMINI_API_KEY.")
     if "chat" not in st.session_state:
         st.session_state.chat = []
     for role, message in st.session_state.chat[-6:]:
@@ -227,7 +224,7 @@ with st.sidebar:
         try:
             from google import genai
             if not api_key:
-                answer = "لم يُضف مفتاح Gemini بعد. أدخله للتجربة أو احفظه في Streamlit Secrets."
+                answer = "لم يُضف مفتاح Gemini بعد. احفظه في Streamlit Secrets باسم GEMINI_API_KEY."
             else:
                 client = genai.Client(api_key=api_key)
                 prior = st.session_state.chat[-8:]
@@ -251,7 +248,7 @@ with st.sidebar:
             answer = "تعذر الاتصال بـ Gemini. تأكد من المفتاح والإنترنت وحدود الاستخدام في Google AI Studio. التفاصيل: " + str(error)[:300]
         st.session_state.chat.extend([("user", q), ("assistant", answer)])
         st.rerun()
-    st.caption("لا تضع المفتاح في ملف GitHub عام. احفظه في Secrets حتى لا يظهر للزوار.")
+    st.caption("المفتاح محفوظ في إعدادات Secrets ولا يظهر للزوار أو في GitHub.")
 
 st.subheader("ابدأ باختيار مسارك الدراسي")
 study_path = st.radio("المسار", ["أكاديمي", "مهني وتقني"], horizontal=True)
@@ -314,7 +311,7 @@ ai_rank_requested = st.button("رتّب الاقتراحات بالذكاء ال
 if ai_rank_requested:
     st.session_state.pop("ai_rank_result", None)
     if not api_key:
-        st.session_state["ai_rank_result"] = "أدخل مفتاح Gemini في القائمة الجانبية أولًا."
+        st.session_state["ai_rank_result"] = "أضف مفتاح Gemini في Streamlit Secrets أولًا."
     elif study_path == "أكاديمي" and len(strong_subjects) != 3:
         st.session_state["ai_rank_result"] = "اختر ثلاث مواد اختيارية أولًا، وبينها مادة علمية واحدة على الأقل."
     elif study_path == "أكاديمي" and not (set(strong_subjects) & set(SCIENCE_SUBJECTS)):
@@ -386,7 +383,7 @@ if rank_image:
     if not uploaded_image:
         st.warning("ارفع صورة قائمة التخصصات أولًا.")
     elif not api_key:
-        st.warning("أضف مفتاح Gemini في Secrets أو أدخله للتجربة المحلية أولًا.")
+        st.warning("أضف مفتاح Gemini في Streamlit Secrets أولًا.")
     else:
         try:
             from google import genai
