@@ -201,15 +201,13 @@ st.write("")
 with st.sidebar:
     st.markdown('<div class="assistant-badge">💬</div>', unsafe_allow_html=True)
     st.subheader("مساعد التخصص الذكي")
-    st.caption("يستخدم Gemini. المفتاح المحفوظ في Secrets لا يظهر للزوار.")
+    st.caption("اسأل عن التخصصات أو المواد أو المسارات الدراسية. يساعدك Gemini على فهم الخيارات ومقارنتها، والاختيار النهائي لك.")
     try:
         saved_api_key = st.secrets.get("GEMINI_API_KEY", "")
     except Exception:
         saved_api_key = ""
     api_key = saved_api_key
-    if api_key:
-        st.success("مفتاح Gemini محفوظ ويعمل تلقائيًا")
-    else:
+    if not api_key:
         st.warning("أضف المفتاح مرة واحدة من Manage app ← Settings ← Secrets باسم GEMINI_API_KEY.")
     if "chat" not in st.session_state:
         st.session_state.chat = []
@@ -248,7 +246,6 @@ with st.sidebar:
             answer = "تعذر الاتصال بـ Gemini. تأكد من المفتاح والإنترنت وحدود الاستخدام في Google AI Studio. التفاصيل: " + str(error)[:300]
         st.session_state.chat.extend([("user", q), ("assistant", answer)])
         st.rerun()
-    st.caption("المفتاح محفوظ في إعدادات Secrets ولا يظهر للزوار أو في GitHub.")
 
 st.subheader("ابدأ باختيار مسارك الدراسي")
 study_path = st.radio("المسار", ["أكاديمي", "مهني وتقني"], horizontal=True)
