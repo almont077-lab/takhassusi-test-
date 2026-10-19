@@ -251,6 +251,7 @@ st.subheader("ابدأ باختيار مسارك الدراسي")
 study_path = st.radio("المسار", ["أكاديمي", "مهني وتقني"], horizontal=True)
 st.caption("أدخل المعدل العام ودرجات المواد التي اخترتها؛ يستخدمها الموقع لترتيب الاقتراحات، وليس لتأكيد القبول الجامعي.")
 math_choice = "غير محددة"
+academic_preference = "علمي"
 average = 80
 strong_subjects = []
 interests = []
@@ -258,7 +259,8 @@ selected_vocational = []
 subject_grades = {}
 
 if study_path == "أكاديمي":
-    st.caption("اختر 3 مواد اختيارية، بينها مادة علوم واحدة على الأقل. اللغات الأجنبية قد لا تتوفر في كل المدارس، ويستمر الطالب باللغة المختارة في الصف 12 حيث تُطرح.")
+    academic_preference = st.radio("ميولك الأكاديمية", ["علمي", "أدبي"], horizontal=True, key="academic_preference")
+    st.caption("هذا الميل يساعد Gemini في التوجيه فقط، وليس مسارًا رسميًا أو شرط قبول. اختر 3 مواد اختيارية من القائمة، بينها مادة علوم واحدة على الأقل. اللغات الأجنبية قد لا تتوفر في كل المدارس، ويستمر الطالب باللغة المختارة في الصف 12 حيث تُطرح.")
     math_choice = st.radio("الرياضيات", ["الرياضيات المتقدمة", "الرياضيات الأساسية"], horizontal=True)
     average = st.number_input("معدلك العام (%)", min_value=0, max_value=100, value=80, step=1, key="academic_average")
     math_grade = st.number_input("درجة " + math_choice + " (%)", min_value=0, max_value=100, value=80, step=1, key="academic_math_grade")
@@ -327,7 +329,7 @@ if ai_rank_requested:
                     for name, data in PROGRAMS.items()
                 )
                 profile = (
-                    f"المسار الأكاديمي، المعدل {average}%، نوع الرياضيات {math_choice}، "
+                    f"المسار الأكاديمي، الميل الذي يفضله الطالب {academic_preference}، المعدل {average}%، نوع الرياضيات {math_choice}، "
                     f"المواد المختارة {', '.join(strong_subjects)}، الدرجات: {grades_summary}، "
                     f"الاهتمامات: {', '.join(interests) or 'لم يحدد'}"
                 )
@@ -349,7 +351,7 @@ if ai_rank_requested:
             prompt = (
                 "أنت مرشد دراسي لطالب في سلطنة عُمان. استخدم قائمة التخصصات المحددة فقط، "
                 "ولا تخترع أسماء أو شروط قبول. المواد المدرجة بجانب التخصصات هي ارتباطات إرشادية عامة وليست شروط قبول رسمية، "
-                "كما أن الميل العلمي أو الأدبي مجرد تفضيل وليس قيدًا على الأهلية. رتّب الأنسب أولًا اعتمادًا على المعدل والدرجات "
+                "كما أن الميل العلمي أو الأدبي مجرد تفضيل وليس قيدًا على الأهلية. استخدمه كعامل توجيهي خفيف فقط، ورتّب الأنسب أولًا اعتمادًا على المعدل والدرجات "
                 "والمواد والاهتمامات. " + count_instruction + "\n"
                 f"بيانات الطالب: {profile}\nالتخصصات المسموح بها:\n{catalog}\n"
                 "أجب بالعربية الواضحة، واكتب لكل تخصص سببًا قصيرًا مرتبطًا ببيانات الطالب. "
@@ -393,7 +395,7 @@ if rank_image:
             ) or "لم يدخل درجات مواد"
             if study_path == "أكاديمي":
                 profile = (
-                    f"المسار الأكاديمي، الرياضيات: {math_choice}، "
+                    f"المسار الأكاديمي، الميل الذي يفضله الطالب: {academic_preference}، الرياضيات: {math_choice}، "
                     f"المعدل: {average}، المواد المختارة: {', '.join(strong_subjects) or 'لم يحدد'}، "
                     f"الدرجات: {grades_summary}، الاهتمامات: {', '.join(interests) or 'لم يحدد'}."
                 )
@@ -453,6 +455,7 @@ elif submitted and study_path == "أكاديمي":
         results.append((score, name, "؛ ".join(reasons)))
 
     st.subheader("اقتراحاتك")
+    st.caption(f"الميل الذي اخترته: {academic_preference}. هذا تفضيل إرشادي فقط؛ لا يغيّر شروط القبول الرسمية.")
     st.caption("هذه اقتراحات إرشادية وليست توقعًا للقبول أو بديلًا عن شروط القبول. بطاقات الكلية العسكرية التقنية تذكر بعض برامج وشروط دليل الطالب 2026/2027؛ بقية التخصصات في القائمة أمثلة وليست كل برامج الدليل، وموادها المرتبطة ليست شروط قبول رسمية. راجع دليل القبول الموحد لكل برنامج.")
     for rank, (score, name, reason) in enumerate(sorted(results, reverse=True)[:20], start=1):
         with st.container(border=True):
