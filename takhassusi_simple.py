@@ -39,6 +39,27 @@ div.stButton > button[kind="primary"] {background:linear-gradient(100deg,#fa4d58
 [data-testid="stProgressBar"] > div > div {background:linear-gradient(90deg,#25a98c,#8be0b9);}
 [data-testid="stMetric"] {background:rgba(25,37,47,.7);padding:.8rem 1rem;border-radius:14px;}
 hr {border-color:rgba(255,255,255,.12);}
+[data-testid="stPopover"] {position:fixed!important;left:18px!important;right:auto!important;bottom:20px!important;top:auto!important;z-index:9999!important;}
+[data-testid="stPopoverButton"] button {width:60px!important;height:60px!important;min-height:60px!important;padding:0!important;border-radius:50%!important;
+ background:linear-gradient(135deg,#178c75,#35b99a)!important;color:white!important;border:2px solid #c0fff0!important;
+ box-shadow:0 8px 28px rgba(0,0,0,.4)!important;font-size:27px!important;}
+[data-testid="stPopoverButton"] button:hover {transform:scale(1.06);}
+[data-testid="stPopoverContent"] {width:min(92vw,420px)!important;max-height:76vh!important;overflow-y:auto!important;}
+@media (max-width: 760px) {
+ .block-container {padding: .8rem .8rem 5.5rem!important;}
+ .hero {padding:1.25rem 1rem;border-radius:18px;}
+ .hero h1 {font-size:1.8rem;}
+ .hero p {font-size:.96rem;line-height:1.7;}
+ .feature-card {min-height:unset;padding:.8rem .9rem;}
+ [data-testid="stHorizontalBlock"] {flex-wrap:wrap!important;gap:.55rem!important;}
+ [data-testid="stHorizontalBlock"] > [data-testid="column"] {flex:1 1 100%!important;min-width:100%!important;}
+ [data-testid="stTextInput"] input,[data-testid="stNumberInput"] input {font-size:16px!important;min-height:46px;}
+ [data-testid="stMultiSelect"] [role="combobox"] {min-height:46px;}
+ div.stButton > button {min-height:48px;}
+ [data-testid="stPopover"] {left:12px!important;bottom:calc(14px + env(safe-area-inset-bottom))!important;}
+ [data-testid="stPopoverButton"] button {width:62px!important;height:62px!important;min-height:62px!important;}
+ [data-testid="stPopoverContent"] {width:min(92vw,390px)!important;max-height:70vh!important;}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,7 +70,18 @@ PROGRAMS = {
     "الكلية العسكرية التقنية – هندسة بحرية (البحرية السلطانية)": {"مواد": ["الرياضيات", "الفيزياء", "اللغة الإنجليزية"], "اهتمامات": ["القيادة", "الانضباط", "خدمة الوطن", "العمل الميداني", "العمل الجماعي"], "متطلبات الدليل": "برنامج MT004؛ يذكر دليل 2026/2027 النجاح في دبلوم التعليم العام و55% في الرياضيات المتقدمة أو الأساسية والفيزياء واللغة الإنجليزية. وقد توجد اختبارات ومتطلبات إضافية."},
     "الكلية العسكرية التقنية – هندسة مدنية ومسح الكميات": {"مواد": ["الرياضيات", "الفيزياء", "اللغة الإنجليزية"], "اهتمامات": ["القيادة", "الانضباط", "خدمة الوطن", "الهندسة", "التصميم", "العمل الميداني", "العمل الجماعي"], "متطلبات الدليل": "تتوفر برامج مرتبطة بجهات عسكرية وهندسية؛ يجب مطابقة رمز البرنامج والجهة والحد الأدنى في دليل 2026/2027."},
     "الكلية العسكرية التقنية – هندسة الجيوماتكس": {"مواد": ["الرياضيات", "الفيزياء", "اللغة الإنجليزية"], "اهتمامات": ["القيادة", "الانضباط", "خدمة الوطن", "الهندسة", "التقنية", "العمل الميداني", "العمل الجماعي"], "متطلبات الدليل": "برنامج هندسة جيوماتكس ضمن برامج الكلية العسكرية التقنية؛ راجع شروط البرنامج والجهة المستفيدة في دليل 2026/2027."},
-    "الطب والعلوم الصحية": {"مواد": ["الأحياء", "الكيمياء"], "اهتمامات": ["الصحة", "مساعدة الناس", "البحث"]},
+    "الطب – جامعة الخليج العربي (SE818)": {
+        "مواد": ["الأحياء", "الكيمياء", "الفيزياء", "الرياضيات", "مهارات اللغة الإنجليزية"],
+        "اهتمامات": ["الصحة", "مساعدة الناس", "البحث"],
+        "متطلبات الدليل": "منحة خارجية. دليل 2026/2027 يذكر معدلًا عامًا لا يقل عن 95%، و90% في الكيمياء والأحياء والفيزياء والرياضيات المتقدمة، و95% في الإنجليزية.",
+        "حدود رسمية": {"معدل": 95, "مواد": {"الكيمياء": 90, "الأحياء": 90, "الفيزياء": 90, "مهارات اللغة الإنجليزية": 95}, "بديل": [], "رياضيات متقدمة": 90},
+    },
+    "الطب – الكلية الملكية للجراحين في البحرين (SE819)": {
+        "مواد": ["الأحياء", "الكيمياء", "الفيزياء", "الرياضيات", "مهارات اللغة الإنجليزية"],
+        "اهتمامات": ["الصحة", "مساعدة الناس", "البحث"],
+        "متطلبات الدليل": "منحة خارجية. دليل 2026/2027 يذكر معدلًا عامًا لا يقل عن 95%، و90% في الكيمياء والأحياء، و85% في الفيزياء أو الرياضيات المتقدمة، و85% في الإنجليزية.",
+        "حدود رسمية": {"معدل": 95, "مواد": {"الكيمياء": 90, "الأحياء": 90, "مهارات اللغة الإنجليزية": 85}, "بديل": [("الفيزياء", 85), ("الرياضيات المتقدمة", 85)]},
+    },
     "التمريض": {"مواد": ["الأحياء", "اللغة الإنجليزية"], "اهتمامات": ["الصحة", "مساعدة الناس", "التواصل"]},
     "الصيدلة": {"مواد": ["الكيمياء", "الأحياء"], "اهتمامات": ["الصحة", "الكيمياء", "البحث"]},
     "الهندسة": {"مواد": ["الرياضيات", "الفيزياء"], "اهتمامات": ["التقنية", "التصميم", "حل المشكلات"]},
@@ -141,6 +173,37 @@ def matching_interest_terms(selected, related):
     })
 
 
+def official_requirement_gaps(data, average, subject_grades, math_choice, math_grade):
+    """Return missing or unmet documented minimums; do not treat tie-breaks as admission gates."""
+    requirements = data.get("حدود رسمية")
+    if not requirements:
+        return []
+    gaps = []
+    if average < requirements["معدل"]:
+        gaps.append(f"المعدل العام {average}% أقل من {requirements['معدل']}%")
+    for subject, minimum in requirements["مواد"].items():
+        grade_subject = SUBJECT_ALIASES.get(subject, subject)
+        if grade_subject not in subject_grades:
+            gaps.append(f"لم تُدخل درجة {subject}")
+        elif subject_grades[grade_subject] < minimum:
+            gaps.append(f"{subject} {subject_grades[grade_subject]}% (المطلوب {minimum}%)")
+    advanced_math_minimum = requirements.get("رياضيات متقدمة")
+    if advanced_math_minimum:
+        if math_choice != "الرياضيات المتقدمة":
+            gaps.append("يشترط اختيار الرياضيات المتقدمة")
+        elif math_grade < advanced_math_minimum:
+            gaps.append(f"الرياضيات المتقدمة {math_grade}% (المطلوب {advanced_math_minimum}%)")
+    alternatives = requirements["بديل"]
+    alternative_met = not alternatives or any(
+        (subject == "الرياضيات المتقدمة" and math_choice == subject and math_grade >= minimum)
+        or (subject != "الرياضيات المتقدمة" and subject in subject_grades and subject_grades[subject] >= minimum)
+        for subject, minimum in alternatives
+    )
+    if alternatives and not alternative_met:
+        gaps.append("لم تتحقق درجة الحد الأدنى في الفيزياء أو الرياضيات المتقدمة")
+    return gaps
+
+
 TECHNICAL_SPECIALTIES = {
     "تقنية المعلومات (BTEC)": {
         "وصف": "تخصص تقني تطبيقي، وتختلف وحداته ومجالاته التفصيلية حسب المدرسة والبرنامج.",
@@ -198,7 +261,7 @@ for column, (icon, title, description) in zip(feature_columns, feature_cards):
 st.write("")
 
 # Gemini API key is read from Streamlit Secrets on the hosted app.
-with st.sidebar:
+with st.popover("💬", help="اضغط هنا لفتح مساعد التخصص الذكي"):
     st.markdown('<div class="assistant-badge">💬</div>', unsafe_allow_html=True)
     st.subheader("مساعد التخصص الذكي")
     st.caption("اسأل عن التخصصات أو المواد أو المسارات الدراسية. يساعدك Gemini على فهم الخيارات ومقارنتها، والاختيار النهائي لك.")
@@ -275,6 +338,22 @@ if study_path == "أكاديمي":
                 "درجة " + subject + " (%)", min_value=0, max_value=100, value=80, step=1,
                 key="academic_grade_" + subject,
             )
+    extra_grade_options = list(dict.fromkeys(
+        SUBJECT_ALIASES.get(subject, subject)
+        for subject in GRADE_SUBJECTS
+        if SUBJECT_ALIASES.get(subject, subject) not in subject_grades
+    ))
+    extra_grade_subjects = st.multiselect(
+        "أضف درجات مواد أخرى (اختياري؛ تفيد في ترتيب بقية التخصصات)",
+        extra_grade_options,
+        placeholder="اختر أي مادة تعرف درجتها",
+        key="academic_extra_grade_subjects",
+    )
+    for subject in extra_grade_subjects:
+        subject_grades[subject] = st.number_input(
+            "درجة " + subject + " (%)", min_value=0, max_value=100, value=80, step=1,
+            key="academic_extra_grade_" + subject,
+        )
     interests = st.multiselect("المجالات التي تهمك", INTERESTS, placeholder="اختر مجالًا أو أكثر")
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="academic_custom_interest", placeholder="مثال: تصميم الألعاب")
     if custom_interest.strip() and custom_interest.strip() not in interests:
@@ -323,11 +402,16 @@ if ai_rank_requested:
                 f"{subject}: {grade}%" for subject, grade in subject_grades.items()
             ) or "لم يدخل درجات مواد"
             if study_path == "أكاديمي":
-                catalog = "\n".join(
-                    f"- {name}: مواد مرتبطة إرشاديًا: {', '.join(data['مواد'])}; مجالات: {', '.join(data['اهتمامات'])}"
-                    + (f"; شروط الدليل الرسمي: {data['متطلبات الدليل']}" if data.get("متطلبات الدليل") else "")
-                    for name, data in PROGRAMS.items()
-                )
+                catalog_rows = []
+                for name, data in PROGRAMS.items():
+                    row = f"- {name}: مواد مرتبطة إرشاديًا: {', '.join(data['مواد'])}; مجالات: {', '.join(data['اهتمامات'])}"
+                    if data.get("متطلبات الدليل"):
+                        row += f"; شروط الدليل الرسمي: {data['متطلبات الدليل']}"
+                    gaps = official_requirement_gaps(data, average, subject_grades, math_choice, math_grade)
+                    if data.get("حدود رسمية") and gaps:
+                        row += "; لا تعرضه كتوصية مستوفية؛ شروط الدليل غير مستوفاة أو بياناتها ناقصة: " + "، ".join(gaps)
+                    catalog_rows.append(row)
+                catalog = "\n".join(catalog_rows)
                 profile = (
                     f"المسار الأكاديمي، الميل الذي يفضله الطالب {academic_preference}، المعدل {average}%، نوع الرياضيات {math_choice}، "
                     f"المواد المختارة {', '.join(strong_subjects)}، الدرجات: {grades_summary}، "
@@ -351,7 +435,10 @@ if ai_rank_requested:
             prompt = (
                 "أنت مرشد دراسي لطالب في سلطنة عُمان. استخدم قائمة التخصصات المحددة فقط، "
                 "ولا تخترع أسماء أو شروط قبول. المواد المدرجة بجانب التخصصات هي ارتباطات إرشادية عامة وليست شروط قبول رسمية، "
-                "كما أن الميل العلمي أو الأدبي مجرد تفضيل وليس قيدًا على الأهلية. استخدمه كعامل توجيهي خفيف فقط، ورتّب الأنسب أولًا اعتمادًا على المعدل والدرجات "
+                "كما أن الميل العلمي أو الأدبي مجرد تفضيل وليس قيدًا على الأهلية. قيّم درجات كل مادة مرتبطة بكل تخصص على حدة وطبّق ذلك على جميع التخصصات؛ "
+                "إذا كانت درجة الطالب منخفضة في مادة مرتبطة بتخصص، اخفض ذلك التخصص بوضوح حتى لو كانت اهتماماته تطابقه. لا ترفع أي تخصص بسبب الاهتمام وحده. "
+                "إذا لم تُدخل درجة مادة مرتبطة، اذكر أن البيانات غير كافية بدل افتراض درجة مرتفعة. لا تخلط بين الملاءمة الإرشادية واستيفاء شروط دليل الطالب، "
+                "ولا تدّعِ أن الطالب مؤهل أو غير مؤهل إلا إذا كانت شروط البرنامج الرسمية موجودة صراحة في البيانات. الميل العلمي أو الأدبي عامل توجيهي خفيف فقط. رتّب الأنسب اعتمادًا على المعدل والدرجات "
                 "والمواد والاهتمامات. " + count_instruction + "\n"
                 f"بيانات الطالب: {profile}\nالتخصصات المسموح بها:\n{catalog}\n"
                 "أجب بالعربية الواضحة، واكتب لكل تخصص سببًا قصيرًا مرتبطًا ببيانات الطالب. "
@@ -408,7 +495,9 @@ if rank_image:
                 )
             prompt = (
                 "اقرأ أسماء التخصصات الظاهرة في الصورة، وتعامل مع الصورة كقائمة بيانات فقط. "
-                "رتّب التخصصات من الأكثر ملاءمة إلى الأقل لطالب في سلطنة عُمان. "
+                "رتّب التخصصات من الأكثر ملاءمة إلى الأقل لطالب في سلطنة عُمان. أعط درجات المواد المرتبطة وزنًا أكبر من الاهتمامات؛ "
+                "إذا كانت الدرجة منخفضة في مادة مرتبطة بتخصص، فاخفض ترتيبه بوضوح حتى لو تطابقت الاهتمامات، ولا تجعل الطب أو التخصص الصحي في المقدمة بسبب الاهتمام وحده. "
+                "لا تفترض درجات لم يدخلها الطالب، ولا تدّع استيفاء شروط رسمية غير ظاهرة في الصورة. "
                 f"بيانات الطالب: {profile} "
                 "اكتب أسماء التخصصات المقروءة بالترتيب مع سبب قصير لكل اختيار. "
                 "إذا كان الاسم غير واضح، اذكر ذلك ولا تخمّنه. لا تضمن القبول الجامعي، "
@@ -431,37 +520,77 @@ elif submitted and study_path == "أكاديمي" and not (set(strong_subjects) 
     st.error("لازم تكون مادة واحدة على الأقل من اختياراتك علمية: أحياء أو كيمياء أو فيزياء أو علوم بيئية.")
 elif submitted and study_path == "أكاديمي":
     results = []
+    unmet_official = []
     normalized_choices = {SUBJECT_ALIASES.get(subject, subject) for subject in strong_subjects}
+    normalized_choices.add("الرياضيات")
     for name, data in PROGRAMS.items():
         matching_subjects = sorted(normalized_choices & set(data["مواد"]))
         subject_match = len(matching_subjects) / max(1, len(data["مواد"]))
         matching_interests = matching_interest_terms(interests, data["اهتمامات"])
         interest_match = len(matching_interests) / max(1, len(data["اهتمامات"]))
-        relevant_grades = [subject_grades[subject] for subject in data["مواد"] if subject in subject_grades]
-        grade_match = sum(relevant_grades) / len(relevant_grades) if relevant_grades else average
-        score = round(average * 0.25 + subject_match * 20 + interest_match * 20 + grade_match * 0.35)
+        grade_pairs = []
+        for subject in data["مواد"]:
+            grade_key = SUBJECT_ALIASES.get(subject, subject)
+            if grade_key == "الرياضيات":
+                grade_pairs.append((subject, math_grade))
+            else:
+                matching_grade_key = next(
+                    (key for key in subject_grades if SUBJECT_ALIASES.get(key, key) == grade_key),
+                    None,
+                )
+                if matching_grade_key:
+                    grade_pairs.append((subject, subject_grades[matching_grade_key]))
+        grade_coverage = len(grade_pairs) / max(1, len(data["مواد"]))
+        grade_match = sum(grade for _, grade in grade_pairs) / len(grade_pairs) if grade_pairs else 50
+        # Apply every entered subject grade to every related specialty; unknown grades reduce confidence.
+        score = round(average * 0.18 + grade_match * 0.55 + grade_coverage * 17 + subject_match * 5 + interest_match * 5)
         reasons = []
-        graded_relevant = [f"{subject} ({subject_grades[subject]}%)" for subject in data["مواد"] if subject in subject_grades]
+        graded_relevant = [f"{subject} ({grade}%)" for subject, grade in grade_pairs]
+        graded_names = {subject for subject, _ in grade_pairs}
+        missing_relevant = [subject for subject in data["مواد"] if subject not in graded_names]
         if matching_subjects:
             reasons.append("مواد تناسبك: " + "، ".join(matching_subjects))
         if graded_relevant:
             reasons.append("درجات مواد مرتبطة: " + "، ".join(graded_relevant))
+            lowest_relevant = min(grade for _, grade in grade_pairs)
+            if lowest_relevant < 60:
+                lowest_subject = min(
+                    grade_pairs,
+                    key=lambda item: item[1],
+                )
+                reasons.append(f"تنبيه: درجتك في {lowest_subject[0]} منخفضة، لذلك خُفّضت الملاءمة. هذا ليس حد قبول رسميًا.")
+            if missing_relevant:
+                reasons.append("درجات غير مدخلة للمواد المرتبطة: " + "، ".join(missing_relevant) + ".")
+        else:
+            reasons.append("لم تدخل درجات المواد المرتبطة؛ الترتيب أقل دقة ولا يتحقق من شروط القبول")
         if matching_interests:
             reasons.append("اهتمامات مشتركة: " + "، ".join(matching_interests))
         if data.get("متطلبات الدليل"):
             reasons.append("من دليل الطالب 2026/2027: " + data["متطلبات الدليل"])
+        if data.get("حدود رسمية"):
+            shortfalls = official_requirement_gaps(data, average, subject_grades, math_choice, math_grade)
+            if shortfalls:
+                unmet_official.append((name, shortfalls, data["متطلبات الدليل"]))
+                continue
+            reasons.append("بيانات الدرجات المدخلة تحقق الحدود الدنيا المذكورة في الدليل؛ القبول غير مضمون ويعتمد على المفاضلة والمقاعد.")
         if not reasons:
             reasons.append("اقتراح عام بناءً على معدلك؛ أضف موادك واهتماماتك لتحسين الترتيب")
         results.append((score, name, "؛ ".join(reasons)))
 
     st.subheader("اقتراحاتك")
     st.caption(f"الميل الذي اخترته: {academic_preference}. هذا تفضيل إرشادي فقط؛ لا يغيّر شروط القبول الرسمية.")
-    st.caption("هذه اقتراحات إرشادية وليست توقعًا للقبول أو بديلًا عن شروط القبول. بطاقات الكلية العسكرية التقنية تذكر بعض برامج وشروط دليل الطالب 2026/2027؛ بقية التخصصات في القائمة أمثلة وليست كل برامج الدليل، وموادها المرتبطة ليست شروط قبول رسمية. راجع دليل القبول الموحد لكل برنامج.")
+    st.caption("هذا ترتيب إرشادي للملاءمة، وليس ترتيب قبول. درجة كل مادة مرتبطة تؤثر على جميع التخصصات، والمواد التي لم تُدخل درجتها معلومات ناقصة ولا نفترض أنها مرتفعة. شروط القبول تختلف حسب المؤسسة ورمز البرنامج؛ راجع دليل الطالب الرسمي.")
     for rank, (score, name, reason) in enumerate(sorted(results, reverse=True)[:20], start=1):
         with st.container(border=True):
             st.markdown(f"### {rank}. {name}")
             st.progress(score, text=f"التوافق المبدئي: {score}%")
             st.write(reason)
+    if unmet_official:
+        with st.expander("برامج لم تتحقق شروطها الرسمية أو لا تكفي البيانات للتحقق"):
+            for name, shortfalls, requirement in unmet_official:
+                st.markdown(f"**{name}**")
+                st.caption(requirement)
+                st.write("؛ ".join(shortfalls))
 elif submitted and study_path == "مهني وتقني":
     options = selected_vocational or list(TECHNICAL_SPECIALTIES)
     ranked = []
@@ -471,8 +600,9 @@ elif submitted and study_path == "مهني وتقني":
         interest_score = 100 * len(matches) / max(1, len(set(interests))) if interests else 50
         relevant_subjects = VOCATIONAL_RELEVANT_SUBJECTS[name]
         relevant_grades = [subject_grades[subject] for subject in relevant_subjects if subject in subject_grades]
-        grade_score = sum(relevant_grades) / len(relevant_grades) if relevant_grades else average
-        score = round(average * 0.30 + grade_score * 0.40 + interest_score * 0.30)
+        grade_coverage = len(relevant_grades) / max(1, len(relevant_subjects))
+        grade_score = sum(relevant_grades) / len(relevant_grades) if relevant_grades else 50
+        score = round(average * 0.18 + grade_score * 0.55 + grade_coverage * 17 + interest_score * 0.10)
         ranked.append((score, name, data["وصف"], matches, relevant_subjects, relevant_grades))
 
     st.subheader("التخصصات المهنية والتقنية المناسبة")
@@ -482,11 +612,10 @@ elif submitted and study_path == "مهني وتقني":
             st.markdown(f"### {rank}. {name}")
             st.progress(score, text=f"التوافق مع اهتماماتك: {score}%")
             st.write(description)
-            st.caption("مواد قد تفيد في هذا التخصص: " + "، ".join(relevant_subjects))
+            st.caption("المواد التي تؤثر في الملاءمة: " + "، ".join(relevant_subjects))
             if matches:
                 st.caption("اهتمامات متوافقة: " + "، ".join(matches))
-            if relevant_grades:
-                st.caption("تم احتساب درجاتك المسجلة للمواد المرتبطة بالتخصص.")
+            st.caption(f"أُدخلت درجات {len(relevant_grades)} من {len(relevant_subjects)} مواد مرتبطة؛ أدخل البقية لرفع دقة المقارنة.")
 
 st.divider()
 with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
@@ -496,7 +625,7 @@ with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
         "- دليل الطالب للعام 2026/2027 يعرض البرامج وشروط كل برنامج، وقد تختلف الشروط بين المؤسسات وتتحدث عبر ملاحق؛ اعتمد دائمًا أحدث نسخة.\n"
         "- اسأل مدرستك عن المواد والمسارات المتاحة في محافظتك."
     )
-    st.markdown("[افتح دليل الطالب للقبول الجامعي 2026/2027 (PDF)](https://www.heac.gov.om/media/doc/StudentGuide2026.pdf)  ·  [ضوابط اختيار المواد 2026/2027 – وزارة التعليم](https://home.moe.gov.om/ar/topics/1/show/13053)")
+    st.markdown("[افتح دليل الطالب للقبول الجامعي 2026/2027 (PDF)](https://heac.gov.om/uploads/15fb0d0c-dacf-4e0e-a4fb-19470ce4d852.pdf)  ·  [ضوابط اختيار المواد 2026/2027 – وزارة التعليم](https://home.moe.gov.om/ar/topics/1/show/13053)")
 st.caption("تخصصي • أداة إرشادية أولية للطالب العُماني")
 
 
