@@ -1,10 +1,13 @@
 import html
+import json
 import re
+from pathlib import Path
 import streamlit as st
 
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
 
-STUDENT_GUIDE_URL = "https://heac.gov.om/admission/first-university-stage"
+STUDENT_GUIDE_URL = "https://www.heac.gov.om/media/doc/StudentGuide2026.pdf"
+STUDENT_GUIDE_CATALOG_PATH = Path(__file__).with_name("student_guide_catalog_2026_2027.json")
 VOCATIONAL_GUIDE_URLS = {
     "تقنية المعلومات (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
     "ريادة الأعمال (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
@@ -207,6 +210,79 @@ PROGRAMS = {
     "الترجمة واللغات": {"مواد": ["اللغة العربية", "اللغة الإنجليزية"], "اهتمامات": ["اللغات", "القراءة والكتابة", "التواصل"]},
     "العلاقات الدولية": {"مواد": ["اللغة العربية", "اللغة الإنجليزية", "التاريخ والجغرافيا"], "اهتمامات": ["القيادة", "اللغات", "التواصل", "القراءة والكتابة"]},
 }
+
+
+def guide_program_profile(title):
+    """Assign broad guidance subjects to official guide entries without inventing admission requirements."""
+    text = title.casefold().replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+    education = any(term in text for term in ("التربي", "التعليم", "معلم"))
+    health = any(term in text for term in ("طب", "صحة", "تمريض", "صيدل", "اسنان", "مختبر", "اشعاع", "تصوير طبي", "علاج", "تغذية", "بصري", "بيطر"))
+    computing = any(term in text for term in ("حاسوب", "كمبيوتر", "معلومات", "سيبراني", "بيانات", "برمج", "ذكاء اصطناعي", "انترنت الاشياء", "شبك"))
+    engineering = any(term in text for term in ("هندس", "ميكانيك", "كهرب", "طيران", "طاقة", "جيومات", "نفط", "غاز", "انشاء", "بناء"))
+    business = any(term in text for term in ("ادار", "اعمال", "تجار", "محاسب", "مالي", "اقتصاد", "تسويق", "موارد بشرية", "لوجست", "سياح", "ضياف", "مشاريع"))
+    creative = any(term in text for term in ("فنون", "فني", "تصميم", "اعلام", "اتصال", "تصوير", "موسيقى", "ازياء", "صحاف"))
+    environment = any(term in text for term in ("بيئ", "زراع", "احياء", "حيوان", "بحري", "مياه", "ارض", "جيولوج", "جغراف", "غذاء"))
+
+    if education:
+        subjects = ["اللغة العربية", "مهارات اللغة الإنجليزية"]
+        if any(term in text for term in ("رياض", "مجال ثاني")):
+            subjects.append("الرياضيات")
+        if any(term in text for term in ("احياء", "مجال ثاني", "علوم")):
+            subjects.append("الأحياء")
+        if "كيمي" in text:
+            subjects.append("الكيمياء")
+        if "فيزي" in text:
+            subjects.append("الفيزياء")
+        if any(term in text for term in ("تقنية المعلومات", "حاسوب")):
+            subjects.append("تقنية المعلومات")
+        if any(term in text for term in ("فني", "تشكيل")):
+            subjects.append("الفنون التشكيلية")
+        if any(term in text for term in ("رياضي", "بدني")):
+            subjects.append("الرياضة المدرسية")
+        if "موسيق" in text:
+            subjects.append("المهارات الموسيقية")
+        interests = ["التعليم", "مساعدة الناس", "التواصل"]
+    elif health:
+        subjects = ["الأحياء", "الكيمياء", "مهارات اللغة الإنجليزية"]
+        interests = ["الصحة", "مساعدة الناس", "البحث العلمي"]
+    elif computing:
+        subjects = ["الرياضيات", "تقنية المعلومات", "مهارات اللغة الإنجليزية"]
+        interests = ["تقنية المعلومات", "البرمجة", "حل المشكلات"]
+    elif engineering:
+        subjects = ["الرياضيات", "الفيزياء", "مهارات اللغة الإنجليزية"]
+        if "كيمي" in text or "نفط" in text or "غاز" in text:
+            subjects.append("الكيمياء")
+        interests = ["الهندسة", "التقنية", "حل المشكلات"]
+    elif business:
+        subjects = ["الرياضيات", "مهارات اللغة الإنجليزية"]
+        interests = ["الأعمال", "القيادة", "التواصل"]
+    elif creative:
+        subjects = ["اللغة العربية", "مهارات اللغة الإنجليزية"]
+        interests = ["التصميم", "الإعلام", "الكتابة"]
+    elif environment:
+        subjects = ["الأحياء", "الكيمياء", "العلوم البيئية"]
+        interests = ["البيئة", "البحث العلمي", "حل المشكلات"]
+    else:
+        subjects = ["اللغة العربية", "مهارات اللغة الإنجليزية", "الرياضيات"]
+        interests = ["البحث العلمي", "التواصل", "حل المشكلات"]
+    return {"مواد": list(dict.fromkeys(subjects)), "اهتمامات": interests}
+
+
+try:
+    with STUDENT_GUIDE_CATALOG_PATH.open(encoding="utf-8") as catalog_file:
+        STUDENT_GUIDE_CATALOG = json.load(catalog_file)
+except (OSError, json.JSONDecodeError):
+    STUDENT_GUIDE_CATALOG = []
+
+for guide_entry in STUDENT_GUIDE_CATALOG:
+    guide_title = guide_entry.get("title", "").strip()
+    if not guide_title:
+        continue
+    if guide_title not in PROGRAMS:
+        PROGRAMS[guide_title] = guide_program_profile(guide_title)
+    PROGRAMS[guide_title]["رموز الدليل"] = guide_entry.get("codes", [])
+    PROGRAMS[guide_title]["صفحات الدليل"] = guide_entry.get("pages", [])
+
 SCIENCE_SUBJECTS = ["الأحياء", "الكيمياء", "الفيزياء", "العلوم البيئية"]
 ELECTIVE_SUBJECTS = [
     "الأحياء", "الكيمياء", "الفيزياء", "العلوم البيئية",
@@ -374,7 +450,7 @@ def grade_weight(program_name, subject):
     """Give each entered grade a weight that reflects the program's core study area."""
     name = program_name.replace(" ", "")
     subject = SUBJECT_ALIASES.get(subject, subject)
-    health = any(term in name for term in ("الطب", "التمريض", "الصيدلة", "الأسنان", "المختبراتالطبية", "الأشعة", "التغذية", "البيطري"))
+    health = any(term in name for term in ("الطب", "طب", "التمريض", "الصيدلة", "الأسنان", "المختبراتالطبية", "الأشعة", "التغذية", "البيطري"))
     engineering = any(term in name for term in ("هندسة", "الهندسي", "الجيوماتكس", "الطيران", "الميكانيكية"))
     computing = any(term in name for term in ("الحاسوب", "المعلومات", "السيبراني", "البيانات", "البرمجيات", "الذكاءالاصطناعي"))
     if health:
@@ -446,6 +522,14 @@ def rank_academic_programs(average, selected_subjects, interests, subject_grades
             reasons.append(f"انخفض التوافق بسبب {low_subject} ({low_grade}%). هذا ليس حد قبول رسميًا.")
         if data.get("متطلبات الدليل"):
             reasons.append("من دليل الطالب 2026/2027: " + data["متطلبات الدليل"])
+        if data.get("رموز الدليل"):
+            pages = data.get("صفحات الدليل", [])
+            reference = "رمز البرنامج " + "، ".join(data["رموز الدليل"][:4])
+            if len(data["رموز الدليل"]) > 4:
+                reference += " وغيرها"
+            if pages:
+                reference += f"، صفحة {pages[0]} من دليل الطالب 2026/2027"
+            reasons.append(reference)
         if data.get("حدود رسمية"):
             shortfalls = official_requirement_gaps(data, average, subject_grades, math_choice, math_grade)
             if shortfalls:
@@ -842,12 +926,19 @@ elif submitted and study_path == "أكاديمي":
     st.caption("أعلى وزن للدرجات والميول: درجة الأحياء ترفع البرامج الحيوية والصحية، بينما الرياضيات والفيزياء ترفع الهندسة. المواد التي لم تدخل درجتها لا تُحسب كأنها مرتفعة.")
     for rank, (score, name, reason) in enumerate(academic_rankings[:20], start=1):
         with st.container(border=True):
+            guide_data = PROGRAMS.get(name, {})
+            guide_codes = guide_data.get("رموز الدليل", [])
+            guide_pages = guide_data.get("صفحات الدليل", [])
+            guide_url = STUDENT_GUIDE_URL + (f"#page={guide_pages[0]}" if guide_pages else "")
+            guide_label = "دليل الطالب الرسمي ↗"
+            if guide_codes and guide_pages:
+                guide_label = f"الدليل: ص {guide_pages[0]} · رمز {guide_codes[0]} ↗"
             st.markdown(
                 f'<div style="display:flex;align-items:baseline;gap:.65rem;flex-wrap:wrap;direction:rtl">'
                 f'<span style="font-size:1.35rem;font-weight:700">{rank}. {name}</span>'
-                f'<a href="{STUDENT_GUIDE_URL}" target="_blank" rel="noopener noreferrer" '
+                f'<a href="{guide_url}" target="_blank" rel="noopener noreferrer" '
                 'style="font-size:.76rem;color:#82cfff;text-decoration:none">'
-                'دليل الطالب الرسمي ↗</a></div>',
+                f'{guide_label}</a></div>',
                 unsafe_allow_html=True,
             )
             st.progress(score, text=f"التوافق المبدئي: {score}%")
@@ -937,6 +1028,28 @@ elif submitted and study_path == "مهني وتقني":
     )
 
 st.divider()
+with st.expander("📚 فهرس تخصصات وبرامج دليل الطالب 2026/2027"):
+    if STUDENT_GUIDE_CATALOG:
+        guide_options = [
+            f"{entry['title']} — {', '.join(entry['codes'][:3])}"
+            for entry in STUDENT_GUIDE_CATALOG
+        ]
+        chosen_guide_option = st.selectbox(
+            "ابحث باسم التخصص أو رمز البرنامج",
+            guide_options,
+            key="student_guide_program_lookup",
+        )
+        selected_index = guide_options.index(chosen_guide_option)
+        selected_entry = STUDENT_GUIDE_CATALOG[selected_index]
+        st.caption("الرموز الواردة في الدليل: " + "، ".join(selected_entry["codes"]))
+        page_number = selected_entry["pages"][0] if selected_entry.get("pages") else None
+        if page_number:
+            st.markdown(
+                f"[افتح صفحة {page_number} في دليل الطالب الرسمي]({STUDENT_GUIDE_URL}#page={page_number})"
+            )
+    else:
+        st.info("ملف فهرس دليل الطالب غير موجود بجانب ملف التطبيق.")
+
 with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
     st.markdown(
         "- أدخل المعدل والدرجات المتوفرة عندك، واختر المواد والاهتمامات الأقرب لك.\n"
@@ -944,7 +1057,7 @@ with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
         "- دليل الطالب للعام 2026/2027 يعرض البرامج وشروط كل برنامج، وقد تختلف الشروط بين المؤسسات وتتحدث عبر ملاحق؛ اعتمد دائمًا أحدث نسخة.\n"
         "- اسأل مدرستك عن المواد والمسارات المتاحة في محافظتك."
     )
-    st.markdown("[افتح دليل الطالب للقبول الجامعي 2026/2027 (PDF)](https://heac.gov.om/uploads/15fb0d0c-dacf-4e0e-a4fb-19470ce4d852.pdf)  ·  [ضوابط اختيار المواد 2026/2027 – وزارة التعليم](https://home.moe.gov.om/ar/topics/1/show/13053)")
+    st.markdown("[افتح دليل الطالب للقبول الجامعي 2026/2027 (PDF)](" + STUDENT_GUIDE_URL + ")  ·  [ضوابط اختيار المواد 2026/2027 – وزارة التعليم](https://home.moe.gov.om/ar/topics/1/show/13053)")
 st.caption("تخصصي • أداة إرشادية أولية للطالب العُماني")
 
 
