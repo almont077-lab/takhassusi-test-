@@ -373,6 +373,12 @@ def rank_academic_programs(average, selected_subjects, interests, subject_grades
                 unmet_official.append((name, shortfalls, data["متطلبات الدليل"]))
                 continue
             reasons.append("الدرجات تحقق الحدود الدنيا المذكورة في الدليل؛ القبول غير مضمون ويعتمد على المفاضلة والمقاعد.")
+        reasons.append(
+            "تفصيل التوافق من 100: درجات المواد "
+            f"{round(evidence_grade * 0.60)}/60، الميول {round(interest_match * 20)}/20، "
+            f"المواد الاختيارية {round(elective_match * 10)}/10، المعدل {round(average * 0.05)}/5، "
+            f"المسار {round(preference_match * 0.05)}/5."
+        )
         ranked.append((score, name, "؛ ".join(reasons) or "توافق عام؛ أضف ميولًا أو درجات أكثر لزيادة دقة الترتيب."))
     return sorted(ranked, reverse=True), unmet_official
 
@@ -785,11 +791,13 @@ elif submitted and study_path == "مهني وتقني":
         evidence_grade = 50 + (grade_score - 50) * grade_coverage
         score = round(evidence_grade * 0.65 + interest_score * 0.20 + grade_coverage * 10 + average * 0.05)
         score = max(0, min(100, score))
-        ranked.append((score, name, data["وصف"], matches, relevant_subjects, relevant_grades))
+        ranked.append((score, name, data["وصف"], matches, relevant_subjects, relevant_grades,
+                       evidence_grade, interest_score, grade_coverage))
 
     st.subheader("التخصصات المهنية والتقنية المناسبة")
     st.caption("هذه اقتراحات أولية. اسأل مدرستك عن التخصصات المتاحة في محافظتك؛ فهي لا تُطرح في كل المدارس.")
-    for rank, (score, name, description, matches, relevant_subjects, relevant_grades) in enumerate(sorted(ranked, reverse=True), start=1):
+    for rank, (score, name, description, matches, relevant_subjects, relevant_grades,
+               evidence_grade, interest_score, grade_coverage) in enumerate(sorted(ranked, reverse=True), start=1):
         with st.container(border=True):
             details_url = VOCATIONAL_GUIDE_URLS.get(name, "https://home.moe.gov.om/images/library/file/Book916206.pdf")
             st.markdown(
@@ -802,6 +810,14 @@ elif submitted and study_path == "مهني وتقني":
             )
             st.progress(score, text=f"التوافق مع اهتماماتك: {score}%")
             st.write(description)
+            grade_points = round(evidence_grade * 0.65)
+            interest_points = round(interest_score * 0.20)
+            coverage_points = round(grade_coverage * 10)
+            average_points = round(average * 0.05)
+            st.caption(
+                f"سبب الترتيب من 100: درجات المواد {grade_points}/65، الميول {interest_points}/20، "
+                f"توفر درجات المواد المرتبطة {coverage_points}/10، المعدل {average_points}/5."
+            )
             st.caption("المواد التي تؤثر في الملاءمة: " + "، ".join(relevant_subjects))
             if matches:
                 st.caption("اهتمامات متوافقة: " + "، ".join(matches))
