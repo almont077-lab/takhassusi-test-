@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
@@ -183,16 +184,20 @@ def matching_interest_terms(selected, related, subjects=()):
     normalized_related = [normalize(value) for value in related_terms]
     matched = []
     for choice in selected:
-        choice_norm = normalize(choice)
-        wanted = expansions.get(choice_norm, [choice])
-        normalized_wanted = [normalize(value) for value in wanted]
-        if any(
-            wanted_term in related_term or related_term in wanted_term
-            for wanted_term in normalized_wanted
-            for related_term in normalized_related
-            if wanted_term and related_term
-        ):
-            matched.append(choice)
+        # Split common custom phrases (e.g. "القيادة والانضباط") into their ideas.
+        atoms = [part.strip() for part in re.split(r"[،,;/+]|(?<=\S)و(?=ال)|\s+و\s*", choice) if part.strip()]
+        for atom in atoms:
+            atom_norm = normalize(atom)
+            wanted = expansions.get(atom_norm, [atom])
+            normalized_wanted = [normalize(value) for value in wanted]
+            if any(
+                wanted_term in related_term or related_term in wanted_term
+                for wanted_term in normalized_wanted
+                for related_term in normalized_related
+                if wanted_term and related_term
+            ):
+                matched.append(choice)
+                break
     return sorted(set(matched))
 
 
@@ -232,7 +237,8 @@ def rank_academic_programs(average, selected_subjects, interests, subject_grades
         for subject in data["مواد"]:
             grade_key = SUBJECT_ALIASES.get(subject, subject)
             if grade_key == "الرياضيات":
-                grade_pairs.append((subject, math_grade))
+                if math_grade is not None:
+                    grade_pairs.append((subject, math_grade))
             else:
                 actual_key = next((key for key in subject_grades if SUBJECT_ALIASES.get(key, key) == grade_key), None)
                 if actual_key:
@@ -246,9 +252,10 @@ def rank_academic_programs(average, selected_subjects, interests, subject_grades
         science_program = any(subject in related_subjects for subject in ("الأحياء", "الكيمياء", "الفيزياء", "الرياضيات"))
         literary_program = any(term in name for term in ("القانون", "التربية", "الإعلام", "الترجمة", "اللغات", "العلاقات الدولية", "التاريخ", "السياحة"))
         preference_match = 100 if (academic_preference == "علمي" and science_program) or (academic_preference == "أدبي" and literary_program) else 50
-        # Subject grades and personal interests lead; the overall average and study preference are supporting factors.
-        score = round(average * 0.05 + grade_match * 0.50 + grade_coverage * 10
-                      + interest_match * 25 + elective_match * 5 + preference_match * 5)
+        # Missing grades are neutral and lower confidence; they are never silently treated as 80%.
+        evidence_grade = 50 + (grade_match - 50) * grade_coverage
+        score = round(evidence_grade * 0.65 + interest_match * 100 * 0.15
+                      + elective_match * 100 * 0.10 + average * 0.05 + preference_match * 0.05)
         # Interest matching can return several synonyms for one selected interest.
         # Keep the displayed percentage within Streamlit's accepted 0–100 range.
         score = max(0, min(100, score))
@@ -297,11 +304,13 @@ def official_requirement_gaps(data, average, subject_grades, math_choice, math_g
     if advanced_math_minimum:
         if math_choice != "الرياضيات المتقدمة":
             gaps.append("يشترط اختيار الرياضيات المتقدمة")
+        elif math_grade is None:
+            gaps.append("لم تُدخل درجة الرياضيات المتقدمة")
         elif math_grade < advanced_math_minimum:
             gaps.append(f"الرياضيات المتقدمة {math_grade}% (المطلوب {advanced_math_minimum}%)")
     alternatives = requirements["بديل"]
     alternative_met = not alternatives or any(
-        (subject == "الرياضيات المتقدمة" and math_choice == subject and math_grade >= minimum)
+        (subject == "الرياضيات المتقدمة" and math_choice == subject and math_grade is not None and math_grade >= minimum)
         or (subject != "الرياضيات المتقدمة" and subject in subject_grades and subject_grades[subject] >= minimum)
         for subject, minimum in alternatives
     )
@@ -437,21 +446,24 @@ subject_grades = {}
 
 if study_path == "أكاديمي":
     academic_preference = st.radio("ميولك الأكاديمية", ["علمي", "أدبي"], horizontal=True, key="academic_preference")
-    st.caption("هذا الميل يساعد Gemini في التوجيه فقط، وليس مسارًا رسميًا أو شرط قبول. اختر 3 مواد اختيارية من القائمة، بينها مادة علوم واحدة على الأقل. اللغات الأجنبية قد لا تتوفر في كل المدارس، ويستمر الطالب باللغة المختارة في الصف 12 حيث تُطرح.")
+    st.caption("هذا الميل يساعد في التوجيه فقط، وليس شرط قبول. اختر 3 مواد اختيارية بينها مادة علوم واحدة على الأقل. اترك خانة الدرجة فارغة إذا لم تعرفها؛ لن يفترض الموقع أنها 80%. اللغات الأجنبية قد لا تتوفر في كل المدارس.")
     math_choice = st.radio("الرياضيات", ["الرياضيات المتقدمة", "الرياضيات الأساسية"], horizontal=True)
     average = st.number_input("معدلك العام (%)", min_value=0, max_value=100, value=80, step=1, key="academic_average")
-    math_grade = st.number_input("درجة " + math_choice + " (%)", min_value=0, max_value=100, value=80, step=1, key="academic_math_grade")
+    math_grade = st.number_input("درجة " + math_choice + " (%)", min_value=0, max_value=100, value=None, step=1, key="academic_math_grade_v2", placeholder="أدخل درجتك")
     strong_subjects = st.multiselect("اختر 3 مواد اختيارية", ELECTIVE_SUBJECTS, max_selections=3, placeholder="اختر المواد التي تدرسها")
     grade_subject_options = list(dict.fromkeys(SUBJECT_ALIASES.get(subject, subject) for subject in strong_subjects))
     grade_subject_options = [subject for subject in grade_subject_options if subject != "الرياضيات"]
-    subject_grades["الرياضيات"] = math_grade
+    if math_grade is not None:
+        subject_grades["الرياضيات"] = math_grade
     if grade_subject_options:
         st.markdown("**درجات المواد التي اخترتها (%)**")
         for subject in grade_subject_options:
             subject_grades[subject] = st.number_input(
-                "درجة " + subject + " (%)", min_value=0, max_value=100, value=80, step=1,
-                key="academic_grade_" + subject,
+                "درجة " + subject + " (%)", min_value=0, max_value=100, value=None, step=1, placeholder="أدخل درجتك",
+                key="academic_grade_v2_" + subject,
             )
+            if subject_grades[subject] is None:
+                subject_grades.pop(subject)
     extra_grade_options = list(dict.fromkeys(
         SUBJECT_ALIASES.get(subject, subject)
         for subject in GRADE_SUBJECTS
@@ -465,9 +477,11 @@ if study_path == "أكاديمي":
     )
     for subject in extra_grade_subjects:
         subject_grades[subject] = st.number_input(
-            "درجة " + subject + " (%)", min_value=0, max_value=100, value=80, step=1,
-            key="academic_extra_grade_" + subject,
+            "درجة " + subject + " (%)", min_value=0, max_value=100, value=None, step=1, placeholder="أدخل درجتك",
+            key="academic_extra_grade_v2_" + subject,
         )
+        if subject_grades[subject] is None:
+            subject_grades.pop(subject)
     interests = st.multiselect("المجالات التي تهمك", INTERESTS, placeholder="اختر مجالًا أو أكثر")
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="academic_custom_interest", placeholder="مثال: تصميم الألعاب")
     if custom_interest.strip() and custom_interest.strip() not in interests:
@@ -487,9 +501,11 @@ else:
         st.markdown("**درجات المواد المختارة (%)**")
         for subject in vocational_subjects:
             subject_grades[subject] = st.number_input(
-                "درجة " + subject + " (%)", min_value=0, max_value=100, value=80, step=1,
-                key="vocational_grade_" + subject,
+                "درجة " + subject + " (%)", min_value=0, max_value=100, value=None, step=1,
+                key="vocational_grade_v2_" + subject, placeholder="أدخل درجتك",
             )
+            if subject_grades[subject] is None:
+                subject_grades.pop(subject)
     interests = st.multiselect("المهارات والمجالات التي تهمك", INTERESTS, placeholder="اختر ما يناسبك")
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="vocational_custom_interest", placeholder="مثال: صيانة الطائرات")
     if custom_interest.strip() and custom_interest.strip() not in interests:
@@ -662,13 +678,14 @@ elif submitted and study_path == "مهني وتقني":
     ranked = []
     for name in options:
         data = TECHNICAL_SPECIALTIES[name]
-        matches = sorted(set(interests) & set(data["اهتمامات"]))
+        matches = matching_interest_terms(interests, data["اهتمامات"], VOCATIONAL_RELEVANT_SUBJECTS[name])
         interest_score = 100 * len(matches) / max(1, len(set(interests))) if interests else 50
         relevant_subjects = VOCATIONAL_RELEVANT_SUBJECTS[name]
         relevant_grades = [subject_grades[subject] for subject in relevant_subjects if subject in subject_grades]
         grade_coverage = len(relevant_grades) / max(1, len(relevant_subjects))
         grade_score = sum(relevant_grades) / len(relevant_grades) if relevant_grades else 50
-        score = round(average * 0.18 + grade_score * 0.55 + grade_coverage * 17 + interest_score * 0.10)
+        evidence_grade = 50 + (grade_score - 50) * grade_coverage
+        score = round(evidence_grade * 0.65 + interest_score * 0.20 + grade_coverage * 10 + average * 0.05)
         score = max(0, min(100, score))
         ranked.append((score, name, data["وصف"], matches, relevant_subjects, relevant_grades))
 
