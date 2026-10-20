@@ -249,6 +249,9 @@ def rank_academic_programs(average, selected_subjects, interests, subject_grades
         # Subject grades and personal interests lead; the overall average and study preference are supporting factors.
         score = round(average * 0.05 + grade_match * 0.50 + grade_coverage * 10
                       + interest_match * 25 + elective_match * 5 + preference_match * 5)
+        # Interest matching can return several synonyms for one selected interest.
+        # Keep the displayed percentage within Streamlit's accepted 0–100 range.
+        score = max(0, min(100, score))
         reasons = []
         if matching_subjects:
             reasons.append("موادك الاختيارية المرتبطة: " + "، ".join(matching_subjects))
@@ -666,6 +669,7 @@ elif submitted and study_path == "مهني وتقني":
         grade_coverage = len(relevant_grades) / max(1, len(relevant_subjects))
         grade_score = sum(relevant_grades) / len(relevant_grades) if relevant_grades else 50
         score = round(average * 0.18 + grade_score * 0.55 + grade_coverage * 17 + interest_score * 0.10)
+        score = max(0, min(100, score))
         ranked.append((score, name, data["وصف"], matches, relevant_subjects, relevant_grades))
 
     st.subheader("التخصصات المهنية والتقنية المناسبة")
