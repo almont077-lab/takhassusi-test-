@@ -3,7 +3,7 @@ import streamlit as st
 
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
 
-STUDENT_GUIDE_URL = "https://www.heac.gov.om/media/doc/StudentGuide2026.pdf"
+STUDENT_GUIDE_URL = "https://heac.gov.om/admission/first-university-stage"
 VOCATIONAL_GUIDE_URLS = {
     "تقنية المعلومات (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
     "ريادة الأعمال (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
@@ -682,7 +682,7 @@ elif submitted and study_path == "أكاديمي":
                 f'<span style="font-size:1.35rem;font-weight:700">{rank}. {name}</span>'
                 f'<a href="{STUDENT_GUIDE_URL}" target="_blank" rel="noopener noreferrer" '
                 'style="font-size:.76rem;color:#82cfff;text-decoration:none">'
-                'صفحة التخصص في دليل الطالب ↗</a></div>',
+                'دليل الطالب الرسمي ↗</a></div>',
                 unsafe_allow_html=True,
             )
             st.progress(score, text=f"التوافق المبدئي: {score}%")
