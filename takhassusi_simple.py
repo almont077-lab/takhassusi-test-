@@ -1,3 +1,4 @@
+import html
 import re
 import streamlit as st
 
@@ -15,6 +16,40 @@ VOCATIONAL_GUIDE_URLS = {
     "عمليات الرفع والتنزيل": "https://home.moe.gov.om/ar/library/0/show/1441/",
     "الصحة والسلامة المهنية": "https://home.moe.gov.om/ar/library/0/show/1442/",
 }
+
+
+def make_results_report(path, average, subjects, grades, interests, rows):
+    """Build a printable, self-contained Arabic report that the student downloads locally."""
+    def safe(value):
+        return html.escape(str(value), quote=True)
+
+    details = [f"المسار: {path}", f"المعدل العام: {average}%"]
+    if subjects:
+        details.append("المواد المختارة: " + "، ".join(subjects))
+    if grades:
+        details.append("الدرجات المدخلة: " + "، ".join(f"{name} {grade}%" for name, grade in grades.items()))
+    if interests:
+        details.append("الميول: " + "، ".join(interests))
+
+    result_cards = "".join(
+        '<article><h2>' + safe(rank) + '. ' + safe(name) + '</h2>'
+        '<p class="score">التوافق المبدئي: ' + safe(score) + '%</p>'
+        '<p>' + safe(reason) + '</p></article>'
+        for rank, name, score, reason in rows
+    )
+    detail_items = "".join(f"<li>{safe(item)}</li>" for item in details)
+    return f'''<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نتائج تخصصي</title><style>
+body{{font-family:Tahoma,Arial,sans-serif;direction:rtl;max-width:900px;margin:32px auto;padding:0 18px;color:#17212b;line-height:1.8}}
+h1{{color:#116b5c}}.notice{{background:#eef7f4;padding:12px 16px;border-radius:10px}}article{{border:1px solid #ccd6dc;border-radius:12px;padding:12px 18px;margin:14px 0;break-inside:avoid}}
+article h2{{margin:0;color:#183c55}}.score{{font-weight:bold;color:#147963}}ul{{padding-right:22px}}
+@media print{{body{{margin:0 auto}}.no-print{{display:none}}article{{border-color:#999}}}}
+</style></head><body><h1>🎓 نتائج تخصصي</h1>
+<p class="notice">هذه نتائج إرشادية للملاءمة، وليست قبولًا جامعيًا أو ضمانًا له. راجع دليل الطالب الرسمي وشروط كل برنامج.</p>
+<h2>بيانات المقارنة</h2><ul>{detail_items}</ul><h2>التخصصات المقترحة</h2>{result_cards}
+<p class="no-print">لتحويل هذه الصفحة إلى PDF: افتح قائمة الطباعة في المتصفح واختر «حفظ كملف PDF».</p>
+</body></html>'''
 
 st.markdown("""
 <style>
@@ -777,6 +812,21 @@ elif submitted and study_path == "أكاديمي":
                 st.markdown(f"**{name}**")
                 st.caption(requirement)
                 st.write("؛ ".join(shortfalls))
+    report_rows = [
+        (rank, name, score, reason)
+        for rank, (score, name, reason) in enumerate(academic_rankings[:20], start=1)
+    ]
+    report_grades = dict(subject_grades)
+    if math_grade is not None:
+        report_grades[math_choice] = math_grade
+    report_html = make_results_report(
+        "أكاديمي", average, strong_subjects, report_grades, interests, report_rows
+    )
+    st.download_button(
+        "تنزيل وحفظ النتائج", data=report_html, file_name="nataej-takhassusi.html",
+        mime="text/html", use_container_width=True, on_click="ignore",
+        help="ينزّل تقريرًا عربيًا على جهازك؛ يمكنك طباعته أو حفظه بصيغة PDF من المتصفح.",
+    )
 elif submitted and study_path == "مهني وتقني":
     options = selected_vocational or list(TECHNICAL_SPECIALTIES)
     ranked = []
@@ -796,8 +846,10 @@ elif submitted and study_path == "مهني وتقني":
 
     st.subheader("التخصصات المهنية والتقنية المناسبة")
     st.caption("هذه اقتراحات أولية. اسأل مدرستك عن التخصصات المتاحة في محافظتك؛ فهي لا تُطرح في كل المدارس.")
+    sorted_ranked = sorted(ranked, reverse=True)
+    vocational_report_rows = []
     for rank, (score, name, description, matches, relevant_subjects, relevant_grades,
-               evidence_grade, interest_score, grade_coverage) in enumerate(sorted(ranked, reverse=True), start=1):
+               evidence_grade, interest_score, grade_coverage) in enumerate(sorted_ranked, start=1):
         with st.container(border=True):
             details_url = VOCATIONAL_GUIDE_URLS.get(name, "https://home.moe.gov.om/images/library/file/Book916206.pdf")
             st.markdown(
@@ -818,10 +870,25 @@ elif submitted and study_path == "مهني وتقني":
                 f"سبب الترتيب من 100: درجات المواد {grade_points}/65، الميول {interest_points}/20، "
                 f"توفر درجات المواد المرتبطة {coverage_points}/10، المعدل {average_points}/5."
             )
+            explanation = (
+                f"{description} سبب الترتيب: درجات المواد {grade_points}/65، الميول {interest_points}/20، "
+                f"توفر درجات المواد المرتبطة {coverage_points}/10، المعدل {average_points}/5. "
+                f"المواد المرتبطة: {'، '.join(relevant_subjects)}. "
+                f"الميول المتوافقة: {'، '.join(matches) if matches else 'لم يظهر تطابق مباشر'}."
+            )
+            vocational_report_rows.append((rank, name, score, explanation))
             st.caption("المواد التي تؤثر في الملاءمة: " + "، ".join(relevant_subjects))
             if matches:
                 st.caption("اهتمامات متوافقة: " + "، ".join(matches))
             st.caption(f"أُدخلت درجات {len(relevant_grades)} من {len(relevant_subjects)} مواد مرتبطة؛ أدخل البقية لرفع دقة المقارنة.")
+    vocational_report = make_results_report(
+        "مهني وتقني", average, vocational_subjects, subject_grades, interests, vocational_report_rows
+    )
+    st.download_button(
+        "تنزيل وحفظ النتائج", data=vocational_report, file_name="nataej-takhassusi.html",
+        mime="text/html", use_container_width=True, on_click="ignore",
+        help="ينزّل تقريرًا عربيًا على جهازك؛ يمكنك طباعته أو حفظه بصيغة PDF من المتصفح.",
+    )
 
 st.divider()
 with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
