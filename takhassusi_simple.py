@@ -3,6 +3,19 @@ import streamlit as st
 
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
 
+STUDENT_GUIDE_URL = "https://www.heac.gov.om/media/doc/StudentGuide2026.pdf"
+VOCATIONAL_GUIDE_URLS = {
+    "تقنية المعلومات (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
+    "ريادة الأعمال (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
+    "السفر والسياحة (BTEC)": "https://home.moe.gov.om/ar/topics/16/show/13256?GetLang=ar",
+    "هندسة التصنيع الميكانيكية": "https://home.moe.gov.om/ar/library/0/show/1446/",
+    "الصيانة الهندسية": "https://home.moe.gov.om/ar/library/0/show/1443/",
+    "صيانة المنشآت الصلبة": "https://home.moe.gov.om/ar/library/0/show/1445/",
+    "اللحام وتشكيل المعادن": "https://home.moe.gov.om/ar/library/0/show/1444/",
+    "عمليات الرفع والتنزيل": "https://home.moe.gov.om/ar/library/0/show/1441/",
+    "الصحة والسلامة المهنية": "https://home.moe.gov.om/ar/library/0/show/1442/",
+}
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
@@ -664,7 +677,14 @@ elif submitted and study_path == "أكاديمي":
     st.caption("أعلى وزن للدرجات والميول: درجة الأحياء ترفع البرامج الحيوية والصحية، بينما الرياضيات والفيزياء ترفع الهندسة. المواد التي لم تدخل درجتها لا تُحسب كأنها مرتفعة.")
     for rank, (score, name, reason) in enumerate(academic_rankings[:20], start=1):
         with st.container(border=True):
-            st.markdown(f"### {rank}. {name}")
+            st.markdown(
+                f'<div style="display:flex;align-items:baseline;gap:.65rem;flex-wrap:wrap;direction:rtl">'
+                f'<span style="font-size:1.35rem;font-weight:700">{rank}. {name}</span>'
+                f'<a href="{STUDENT_GUIDE_URL}" target="_blank" rel="noopener noreferrer" '
+                'style="font-size:.76rem;color:#82cfff;text-decoration:none">'
+                'صفحة التخصص في دليل الطالب ↗</a></div>',
+                unsafe_allow_html=True,
+            )
             st.progress(score, text=f"التوافق المبدئي: {score}%")
             st.write(reason)
     if academic_unmet:
@@ -693,7 +713,15 @@ elif submitted and study_path == "مهني وتقني":
     st.caption("هذه اقتراحات أولية. اسأل مدرستك عن التخصصات المتاحة في محافظتك؛ فهي لا تُطرح في كل المدارس.")
     for rank, (score, name, description, matches, relevant_subjects, relevant_grades) in enumerate(sorted(ranked, reverse=True), start=1):
         with st.container(border=True):
-            st.markdown(f"### {rank}. {name}")
+            details_url = VOCATIONAL_GUIDE_URLS.get(name, "https://home.moe.gov.om/images/library/file/Book916206.pdf")
+            st.markdown(
+                f'<div style="display:flex;align-items:baseline;gap:.65rem;flex-wrap:wrap;direction:rtl">'
+                f'<span style="font-size:1.35rem;font-weight:700">{rank}. {name}</span>'
+                f'<a href="{details_url}" target="_blank" rel="noopener noreferrer" '
+                'style="font-size:.76rem;color:#82cfff;text-decoration:none">'
+                'تفاصيل التخصص ↗</a></div>',
+                unsafe_allow_html=True,
+            )
             st.progress(score, text=f"التوافق مع اهتماماتك: {score}%")
             st.write(description)
             st.caption("المواد التي تؤثر في الملاءمة: " + "، ".join(relevant_subjects))
