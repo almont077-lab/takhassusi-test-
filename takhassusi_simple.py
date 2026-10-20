@@ -51,6 +51,50 @@ article h2{{margin:0;color:#183c55}}.score{{font-weight:bold;color:#147963}}ul{{
 <p class="no-print">لتحويل هذه الصفحة إلى PDF: افتح قائمة الطباعة في المتصفح واختر «حفظ كملف PDF».</p>
 </body></html>'''
 
+
+def render_interest_quiz(path_key):
+    """Offer an optional short interest quiz and keep its suggestions in session only."""
+    quiz_key = f"{path_key}_interest_quiz_suggestions"
+    question_groups = [
+        ("أستمتع بمساعدة الناس والاهتمام بصحتهم.", ["الصحة", "مساعدة الناس", "التمريض", "الطب"]),
+        ("أحب الأحياء والكيمياء والتجارب والبحث.", ["الأحياء", "الكيمياء", "البحث العلمي", "المختبرات"]),
+        ("أحب الرياضيات وحل المسائل وتصميم الحلول.", ["الرياضيات", "الهندسة", "حل المشكلات", "التصميم"]),
+        ("أستمتع بالكمبيوتر والبرمجة والتقنية.", ["تقنية المعلومات", "البرمجة", "الذكاء الاصطناعي", "الأمن السيبراني"]),
+        ("أحب التجارة وإدارة المشاريع والتعامل مع الأرقام.", ["الأعمال", "ريادة الأعمال", "المحاسبة", "القيادة"]),
+        ("أحب القراءة والكتابة واللغات والتواصل.", ["القراءة", "الكتابة", "اللغات", "الترجمة", "التواصل"]),
+        ("أستمتع بالرسم والتصميم والإعلام والتصوير.", ["الرسم والفنون", "التصميم", "الإعلام", "التصوير"]),
+        ("أفضل العمل العملي وصيانة الأجهزة والمعدات.", ["العمل العملي", "الصيانة", "الميكانيكا", "التقنية"]),
+        ("أرتاح للعمل الميداني والنظام والقيادة وخدمة الوطن.", ["العمل الميداني", "الانضباط", "القيادة", "العسكرية والأمنية"]),
+        ("أهتم بالبيئة والزراعة والحيوانات.", ["البيئة", "الزراعة", "الحيوانات", "الأحياء"]),
+    ]
+    with st.expander("محتار؟ اكتشف ميولك باختبار سريع"):
+        st.caption("اختبار استكشافي بسيط، وليس اختبارًا نفسيًا أو شرطًا للقبول. إجاباتك تبقى في جلسة الموقع.")
+        answers = []
+        for index, (question, _) in enumerate(question_groups):
+            answer = st.radio(
+                question, ["— اختر —", "ينطبق علي كثيرًا", "أحيانًا", "لا ينطبق علي"],
+                key=f"{path_key}_interest_quiz_answer_{index}", horizontal=True,
+            )
+            answers.append(answer)
+        if st.button("اكتشف المجالات الأقرب لي", key=f"{path_key}_interest_quiz_submit", use_container_width=True):
+            suggestions = []
+            for answer, (_, related_interests) in zip(answers, question_groups):
+                if answer == "ينطبق علي كثيرًا":
+                    suggestions.extend(related_interests)
+                elif answer == "أحيانًا":
+                    suggestions.extend(related_interests[:2])
+            st.session_state[quiz_key] = list(dict.fromkeys(suggestions))
+        suggestions = st.session_state.get(quiz_key, [])
+        if suggestions:
+            st.success("المجالات التي اقترحها الاختبار: " + "، ".join(suggestions))
+            use_suggestions = st.checkbox(
+                "استخدم هذه المجالات في ترتيب التخصصات", value=True,
+                key=f"{path_key}_interest_quiz_use",
+            )
+            if use_suggestions:
+                return suggestions
+    return []
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
@@ -618,6 +662,7 @@ if study_path == "أكاديمي":
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="academic_custom_interest", placeholder="مثال: تصميم الألعاب")
     if custom_interest.strip() and custom_interest.strip() not in interests:
         interests.append(custom_interest.strip())
+    interests = list(dict.fromkeys(interests + render_interest_quiz("academic")))
     st.caption("المجال الذي تكتبه يُرسل إلى Gemini عند استخدام ترتيب الذكاء الاصطناعي.")
     submitted = st.button("اعرض التخصصات المناسبة", type="primary", use_container_width=True)
 else:
@@ -642,6 +687,7 @@ else:
     custom_interest = st.text_input("أضف مجالًا غير موجود (اختياري)", key="vocational_custom_interest", placeholder="مثال: صيانة الطائرات")
     if custom_interest.strip() and custom_interest.strip() not in interests:
         interests.append(custom_interest.strip())
+    interests = list(dict.fromkeys(interests + render_interest_quiz("vocational")))
     st.caption("المجال الذي تكتبه يُرسل إلى Gemini عند استخدام ترتيب الذكاء الاصطناعي.")
     submitted = st.button("رتّب التخصصات المهنية المناسبة", type="primary", use_container_width=True)
 
