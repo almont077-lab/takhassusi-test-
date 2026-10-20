@@ -159,7 +159,7 @@ VOCATIONAL_RELEVANT_SUBJECTS = {
 INTERESTS = [
     "الطب", "الصحة", "التمريض", "مساعدة الناس", "علم النفس", "البحث العلمي", "المختبرات",
     "الأحياء", "العلوم الحيوية", "الكيمياء", "الفيزياء", "الرياضيات",
-    "التقنية", "البرمجة", "الذكاء الاصطناعي", "الأمن السيبراني", "الروبوتات", "الشبكات",
+    "التقنية", "الكمبيوتر والحاسوب", "علوم الحاسوب", "تقنية المعلومات", "البرمجة", "الذكاء الاصطناعي", "الأمن السيبراني", "الروبوتات", "الشبكات", "تطوير التطبيقات",
     "الهندسة", "الكهرباء", "الميكانيكا", "الصيانة", "الطيران", "السيارات", "الطاقة",
     "التصميم", "الرسم والفنون", "الهندسة المعمارية", "الكتابة", "القراءة", "الإعلام", "التصوير",
     "التعليم", "اللغات", "الترجمة", "التواصل", "القانون", "التاريخ", "الجغرافيا",
@@ -192,6 +192,12 @@ def matching_interest_terms(selected, related, subjects=()):
         "المختبرات": ["المختبرات", "البحث العلمي"],
         "البرمجة": ["البرمجة", "التقنية"],
         "الذكاءالاصطناعي": ["الذكاء الاصطناعي", "التقنية", "البرمجة"],
+        "الكمبيوتر": ["الكمبيوتر", "الحاسوب", "علوم الحاسوب", "تقنية المعلومات", "البرمجة"],
+        "كمبيوتر": ["الكمبيوتر", "الحاسوب", "علوم الحاسوب", "تقنية المعلومات", "البرمجة"],
+        "الحاسوب": ["الكمبيوتر", "الحاسوب", "علوم الحاسوب", "تقنية المعلومات", "البرمجة"],
+        "الحاسب": ["الكمبيوتر", "الحاسوب", "علوم الحاسوب", "تقنية المعلومات", "البرمجة"],
+        "الشبكات": ["الشبكات", "تقنية المعلومات", "الأمن السيبراني"],
+        "تطويرالتطبيقات": ["البرمجة", "تقنية المعلومات", "علوم الحاسوب"],
     }
     related_terms = list(related) + list(subjects)
     normalized_related = [normalize(value) for value in related_terms]
@@ -269,6 +275,22 @@ def rank_academic_programs(average, selected_subjects, interests, subject_grades
         evidence_grade = 50 + (grade_match - 50) * grade_coverage
         score = round(evidence_grade * 0.65 + interest_match * 100 * 0.15
                       + elective_match * 100 * 0.10 + average * 0.05 + preference_match * 0.05)
+        # Explicit computing interests should reliably bring computing degrees into view,
+        # even when the student has many other interests selected at the same time.
+        normalized_name = name.replace(" ", "")
+        computing_program = any(term in normalized_name for term in (
+            "الحاسوب", "المعلومات", "السيبراني", "البيانات", "البرمجيات", "الذكاءالاصطناعي", "نظمالمعلومات"
+        ))
+        computing_interest_words = (
+            "التقنية", "الكمبيوتر", "الحاسوب", "علومالحاسوب", "تقنيةالمعلومات", "البرمجة",
+            "الذكاءالاصطناعي", "الأمنالسيبراني", "الروبوتات", "الشبكات", "تطويرالتطبيقات",
+        )
+        has_computing_interest = any(
+            any(word in choice.replace(" ", "") for word in computing_interest_words)
+            for choice in interests
+        )
+        if computing_program and has_computing_interest:
+            score += 18
         # Interest matching can return several synonyms for one selected interest.
         # Keep the displayed percentage within Streamlit's accepted 0–100 range.
         score = max(0, min(100, score))
