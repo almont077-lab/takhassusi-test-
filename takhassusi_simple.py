@@ -144,6 +144,7 @@ VOCATIONAL_RELEVANT_SUBJECTS = {
 }
 INTERESTS = [
     "الطب", "الصحة", "التمريض", "مساعدة الناس", "علم النفس", "البحث العلمي", "المختبرات",
+    "الأحياء", "العلوم الحيوية", "الكيمياء", "الفيزياء", "الرياضيات",
     "التقنية", "البرمجة", "الذكاء الاصطناعي", "الأمن السيبراني", "الروبوتات", "الشبكات",
     "الهندسة", "الكهرباء", "الميكانيكا", "الصيانة", "الطيران", "السيارات", "الطاقة",
     "التصميم", "الرسم والفنون", "الهندسة المعمارية", "الكتابة", "القراءة", "الإعلام", "التصوير",
@@ -155,7 +156,7 @@ INTERESTS = [
 ]
 
 
-def matching_interest_terms(selected, related):
+def matching_interest_terms(selected, related, subjects=()):
     """Match custom phrases such as 'القيادة والانضباط' to catalogue interests."""
     def normalize(value):
         value = value.strip().replace("وال", "ال")
@@ -165,12 +166,114 @@ def matching_interest_terms(selected, related):
             value = value[2:]
         return value.replace(" ", "")
 
-    normalized_selected = [normalize(value) for value in selected if value.strip()]
-    return sorted({
-        interest for interest in related
-        if any(normalize(interest) in phrase or phrase in normalize(interest)
-               for phrase in normalized_selected)
-    })
+    expansions = {
+        "احياء": ["الأحياء", "العلوم الحيوية"],
+        "علومحيوية": ["الأحياء", "العلوم الحيوية"],
+        "الكيمياء": ["الكيمياء"],
+        "الفيزياء": ["الفيزياء"],
+        "الرياضيات": ["الرياضيات"],
+        "الهندسة": ["الهندسة", "حل المشكلات", "التصميم"],
+        "الطب": ["الطب", "الصحة"],
+        "الصحة": ["الصحة", "الطب", "التمريض"],
+        "المختبرات": ["المختبرات", "البحث العلمي"],
+        "البرمجة": ["البرمجة", "التقنية"],
+        "الذكاءالاصطناعي": ["الذكاء الاصطناعي", "التقنية", "البرمجة"],
+    }
+    related_terms = list(related) + list(subjects)
+    normalized_related = [normalize(value) for value in related_terms]
+    matched = []
+    for choice in selected:
+        choice_norm = normalize(choice)
+        wanted = expansions.get(choice_norm, [choice])
+        normalized_wanted = [normalize(value) for value in wanted]
+        if any(
+            wanted_term in related_term or related_term in wanted_term
+            for wanted_term in normalized_wanted
+            for related_term in normalized_related
+            if wanted_term and related_term
+        ):
+            matched.append(choice)
+    return sorted(set(matched))
+
+
+def grade_weight(program_name, subject):
+    """Give each entered grade a weight that reflects the program's core study area."""
+    name = program_name.replace(" ", "")
+    subject = SUBJECT_ALIASES.get(subject, subject)
+    health = any(term in name for term in ("الطب", "التمريض", "الصيدلة", "الأسنان", "المختبراتالطبية", "الأشعة", "التغذية", "البيطري"))
+    engineering = any(term in name for term in ("هندسة", "الهندسي", "الجيوماتكس", "الطيران", "الميكانيكية"))
+    computing = any(term in name for term in ("الحاسوب", "المعلومات", "السيبراني", "البيانات", "البرمجيات", "الذكاءالاصطناعي"))
+    if health:
+        return {"الأحياء": 1.5, "الكيمياء": 1.3, "الفيزياء": 0.7, "الرياضيات": 0.6,
+                "مهارات اللغة الإنجليزية": 0.7, "اللغة الإنجليزية": 0.7}.get(subject, 1.0)
+    if engineering:
+        weights = {"الرياضيات": 1.5, "الفيزياء": 1.4, "الكيمياء": 0.8, "تقنية المعلومات": 0.7,
+                   "الأحياء": 0.25, "مهارات اللغة الإنجليزية": 0.6, "اللغة الإنجليزية": 0.6}
+        if any(term in name for term in ("الكيميائية", "النفط", "الغاز")):
+            weights["الكيمياء"] = 1.25
+        return weights.get(subject, 1.0)
+    if computing:
+        return {"تقنية المعلومات": 1.5, "الرياضيات": 1.2, "مهارات اللغة الإنجليزية": 0.8,
+                "اللغة الإنجليزية": 0.8}.get(subject, 1.0)
+    if any(term in name for term in ("الأحياء", "الحيوية", "البيئية", "الزراعة", "الحيوان")):
+        return {"الأحياء": 1.5, "الكيمياء": 1.2, "العلوم البيئية": 1.2, "الرياضيات": 0.6}.get(subject, 1.0)
+    return 1.0
+
+
+def rank_academic_programs(average, selected_subjects, interests, subject_grades, math_choice, math_grade, academic_preference):
+    """Use one deterministic grade + elective + interest score for both results and Gemini."""
+    selected = {SUBJECT_ALIASES.get(subject, subject) for subject in selected_subjects}
+    ranked, unmet_official = [], []
+    for name, data in PROGRAMS.items():
+        related_subjects = [SUBJECT_ALIASES.get(subject, subject) for subject in data["مواد"]]
+        matching_subjects = sorted(selected & set(related_subjects))
+        matching_interests = matching_interest_terms(interests, data["اهتمامات"], related_subjects)
+        grade_pairs = []
+        for subject in data["مواد"]:
+            grade_key = SUBJECT_ALIASES.get(subject, subject)
+            if grade_key == "الرياضيات":
+                grade_pairs.append((subject, math_grade))
+            else:
+                actual_key = next((key for key in subject_grades if SUBJECT_ALIASES.get(key, key) == grade_key), None)
+                if actual_key:
+                    grade_pairs.append((subject, subject_grades[actual_key]))
+        weights = [grade_weight(name, subject) for subject, _ in grade_pairs]
+        grade_match = (sum(grade * weight for (_, grade), weight in zip(grade_pairs, weights)) / sum(weights)) if weights else 50
+        total_weight = sum(grade_weight(name, subject) for subject in data["مواد"])
+        grade_coverage = (sum(weights) / total_weight) if total_weight else 0
+        elective_match = len(matching_subjects) / max(1, len(selected)) if selected else 0.5
+        interest_match = len(matching_interests) / max(1, len(interests)) if interests else 0.5
+        science_program = any(subject in related_subjects for subject in ("الأحياء", "الكيمياء", "الفيزياء", "الرياضيات"))
+        literary_program = any(term in name for term in ("القانون", "التربية", "الإعلام", "الترجمة", "اللغات", "العلاقات الدولية", "التاريخ", "السياحة"))
+        preference_match = 100 if (academic_preference == "علمي" and science_program) or (academic_preference == "أدبي" and literary_program) else 50
+        # Subject grades and personal interests lead; the overall average and study preference are supporting factors.
+        score = round(average * 0.05 + grade_match * 0.50 + grade_coverage * 10
+                      + interest_match * 25 + elective_match * 5 + preference_match * 5)
+        reasons = []
+        if matching_subjects:
+            reasons.append("موادك الاختيارية المرتبطة: " + "، ".join(matching_subjects))
+        if grade_pairs:
+            reasons.append("درجات المواد الأساسية: " + "، ".join(f"{subject} {grade}%" for subject, grade in grade_pairs))
+        missing = [subject for subject in data["مواد"] if not any(SUBJECT_ALIASES.get(key, key) == SUBJECT_ALIASES.get(subject, subject) for key, _ in grade_pairs)]
+        if missing:
+            reasons.append("درجات لم تدخلها بعد: " + "، ".join(missing))
+        if matching_interests:
+            reasons.append("ميول متوافقة: " + "، ".join(matching_interests))
+        if preference_match == 100:
+            reasons.append("يناسب اختيارك للمسار " + academic_preference)
+        if grade_pairs and min(grade for _, grade in grade_pairs) < 60:
+            low_subject, low_grade = min(grade_pairs, key=lambda pair: pair[1])
+            reasons.append(f"انخفض التوافق بسبب {low_subject} ({low_grade}%). هذا ليس حد قبول رسميًا.")
+        if data.get("متطلبات الدليل"):
+            reasons.append("من دليل الطالب 2026/2027: " + data["متطلبات الدليل"])
+        if data.get("حدود رسمية"):
+            shortfalls = official_requirement_gaps(data, average, subject_grades, math_choice, math_grade)
+            if shortfalls:
+                unmet_official.append((name, shortfalls, data["متطلبات الدليل"]))
+                continue
+            reasons.append("الدرجات تحقق الحدود الدنيا المذكورة في الدليل؛ القبول غير مضمون ويعتمد على المفاضلة والمقاعد.")
+        ranked.append((score, name, "؛ ".join(reasons) or "توافق عام؛ أضف ميولًا أو درجات أكثر لزيادة دقة الترتيب."))
+    return sorted(ranked, reverse=True), unmet_official
 
 
 def official_requirement_gaps(data, average, subject_grades, math_choice, math_grade):
@@ -274,7 +377,7 @@ with st.popover("💬", help="اضغط هنا لفتح مساعد التخصص �
         st.warning("أضف المفتاح مرة واحدة من Manage app ← Settings ← Secrets باسم GEMINI_API_KEY.")
     if "chat" not in st.session_state:
         st.session_state.chat = []
-    for role, message in st.session_state.chat[-6:]:
+    for role, message in st.session_state.chat[-4:]:
         with st.chat_message(role):
             st.write(message)
     with st.form("assistant_form", clear_on_submit=True):
@@ -288,21 +391,28 @@ with st.popover("💬", help="اضغط هنا لفتح مساعد التخصص �
                 answer = "لم يُضف مفتاح Gemini بعد. احفظه في Streamlit Secrets باسم GEMINI_API_KEY."
             else:
                 client = genai.Client(api_key=api_key)
-                prior = st.session_state.chat[-8:]
+                prior = st.session_state.chat[-4:]
                 transcript = "\n".join(
                     ("الطالب" if role == "user" else "المساعد") + ": " + message
                     for role, message in prior
                 )
                 transcript += "\nالطالب: " + q
-                response = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=(
-                        "أنت مرشد أكاديمي لطالب في سلطنة عُمان. أجب بالعربية السهلة وباختصار. "
-                        "ساعده على التفكير في التخصصات ولا تدّع معرفة شروط قبول محدثة أو ضمان القبول؛ "
-                        "ذكّره بالتحقق من دليل القبول الرسمي عند الحاجة.\n\n" + transcript
-                    ),
+                prompt = (
+                    "أنت مرشد أكاديمي لطالب في سلطنة عُمان. أجب بالعربية السهلة وباختصار في 2–4 جمل. "
+                    "ساعده على التفكير في التخصصات ولا تدّعِ شروط قبول محدثة أو ضمان القبول؛ ذكّره بدليل القبول عند الحاجة.\n\n" + transcript
                 )
-                answer = (response.text or "").strip() or "لم يصلني رد. جرّب صياغة السؤال مرة أخرى."
+                def answer_chunks():
+                    yield from client.models.generate_content_stream(
+                        model="gemini-3.5-flash-lite",
+                        contents=prompt,
+                        config=genai.types.GenerateContentConfig(
+                            max_output_tokens=300,
+                            thinking_config=genai.types.ThinkingConfig(thinking_level="minimal"),
+                        ),
+                    )
+                with st.chat_message("assistant"):
+                    answer = st.write_stream(chunk.text for chunk in answer_chunks() if chunk.text)
+                answer = (answer or "").strip() or "لم يصلني رد. جرّب صياغة السؤال مرة أخرى."
         except ImportError:
             answer = "مكتبة Gemini غير مثبتة. أعد تشغيل البرنامج بعد تحديث requirements.txt."
         except Exception as error:
@@ -383,6 +493,12 @@ else:
     st.caption("المجال الذي تكتبه يُرسل إلى Gemini عند استخدام ترتيب الذكاء الاصطناعي.")
     submitted = st.button("رتّب التخصصات المهنية المناسبة", type="primary", use_container_width=True)
 
+academic_rankings, academic_unmet = [], []
+if study_path == "أكاديمي" and len(strong_subjects) == 3 and set(strong_subjects) & set(SCIENCE_SUBJECTS):
+    academic_rankings, academic_unmet = rank_academic_programs(
+        average, strong_subjects, interests, subject_grades, math_choice, math_grade, academic_preference
+    )
+
 st.markdown("### ترتيب أذكى بالذكاء الاصطناعي")
 st.caption("يرتب Gemini التخصصات حسب معدلك ودرجات المواد واهتماماتك. قد تنفد الحصة المجانية إذا استخدمه زوار كثيرون.")
 ai_rank_requested = st.button("رتّب الاقتراحات بالذكاء الاصطناعي", use_container_width=True)
@@ -402,22 +518,16 @@ if ai_rank_requested:
                 f"{subject}: {grade}%" for subject, grade in subject_grades.items()
             ) or "لم يدخل درجات مواد"
             if study_path == "أكاديمي":
-                catalog_rows = []
-                for name, data in PROGRAMS.items():
-                    row = f"- {name}: مواد مرتبطة إرشاديًا: {', '.join(data['مواد'])}; مجالات: {', '.join(data['اهتمامات'])}"
-                    if data.get("متطلبات الدليل"):
-                        row += f"; شروط الدليل الرسمي: {data['متطلبات الدليل']}"
-                    gaps = official_requirement_gaps(data, average, subject_grades, math_choice, math_grade)
-                    if data.get("حدود رسمية") and gaps:
-                        row += "; لا تعرضه كتوصية مستوفية؛ شروط الدليل غير مستوفاة أو بياناتها ناقصة: " + "، ".join(gaps)
-                    catalog_rows.append(row)
-                catalog = "\n".join(catalog_rows)
+                catalog = "\n".join(
+                    f"{rank}. {name} — توافق الموقع {score}% — سبب الترتيب: {reason}"
+                    for rank, (score, name, reason) in enumerate(academic_rankings[:20], start=1)
+                )
                 profile = (
                     f"المسار الأكاديمي، الميل الذي يفضله الطالب {academic_preference}، المعدل {average}%، نوع الرياضيات {math_choice}، "
                     f"المواد المختارة {', '.join(strong_subjects)}، الدرجات: {grades_summary}، "
                     f"الاهتمامات: {', '.join(interests) or 'لم يحدد'}"
                 )
-                count_instruction = "رتّب أفضل 20 تخصصًا أو كل التخصصات إذا كان عددها أقل."
+                count_instruction = "حافظ على الترتيب والأرقام كما هي تمامًا؛ لا تعِد ترتيب التخصصات ولا تضف أو تحذف أي تخصص. اشرح سبب كل خيار باختصار."
             else:
                 candidate_names = selected_vocational or list(TECHNICAL_SPECIALTIES)
                 catalog = "\n".join(
@@ -435,11 +545,11 @@ if ai_rank_requested:
             prompt = (
                 "أنت مرشد دراسي لطالب في سلطنة عُمان. استخدم قائمة التخصصات المحددة فقط، "
                 "ولا تخترع أسماء أو شروط قبول. المواد المدرجة بجانب التخصصات هي ارتباطات إرشادية عامة وليست شروط قبول رسمية، "
-                "كما أن الميل العلمي أو الأدبي مجرد تفضيل وليس قيدًا على الأهلية. قيّم درجات كل مادة مرتبطة بكل تخصص على حدة وطبّق ذلك على جميع التخصصات؛ "
-                "إذا كانت درجة الطالب منخفضة في مادة مرتبطة بتخصص، اخفض ذلك التخصص بوضوح حتى لو كانت اهتماماته تطابقه. لا ترفع أي تخصص بسبب الاهتمام وحده. "
+                "كما أن الميل العلمي أو الأدبي مجرد تفضيل وليس قيدًا على الأهلية. الموقع حسب التوافق من درجات المواد والمواد الاختيارية والميول؛ "
+                "أبقِ الترتيب المحسوب في القائمة كما هو ولا تغيّره بناءً على رأيك. لا ترفع أي تخصص بسبب الاهتمام وحده. "
                 "إذا لم تُدخل درجة مادة مرتبطة، اذكر أن البيانات غير كافية بدل افتراض درجة مرتفعة. لا تخلط بين الملاءمة الإرشادية واستيفاء شروط دليل الطالب، "
-                "ولا تدّعِ أن الطالب مؤهل أو غير مؤهل إلا إذا كانت شروط البرنامج الرسمية موجودة صراحة في البيانات. الميل العلمي أو الأدبي عامل توجيهي خفيف فقط. رتّب الأنسب اعتمادًا على المعدل والدرجات "
-                "والمواد والاهتمامات. " + count_instruction + "\n"
+                "ولا تدّعِ أن الطالب مؤهل أو غير مؤهل إلا إذا كانت شروط البرنامج الرسمية موجودة صراحة في البيانات. "
+                + count_instruction + "\n"
                 f"بيانات الطالب: {profile}\nالتخصصات المسموح بها:\n{catalog}\n"
                 "أجب بالعربية الواضحة، واكتب لكل تخصص سببًا قصيرًا مرتبطًا ببيانات الطالب. "
                 "لا تضمن القبول، واختم بالتنبيه إلى مراجعة شروط القبول الرسمية."
@@ -449,6 +559,10 @@ if ai_rank_requested:
                 response = client.models.generate_content(
                     model="gemini-3.8-flash",
                     contents=prompt,
+                    config=genai.types.GenerateContentConfig(
+                        max_output_tokens=1400,
+                        thinking_config=genai.types.ThinkingConfig(thinking_level="low"),
+                    ),
                 )
             st.session_state["ai_rank_result"] = (response.text or "ما وصلني ترتيب. حاول مرة أخرى.").strip()
         except ImportError:
@@ -507,6 +621,10 @@ if rank_image:
                 response = client.models.generate_content(
                     model="gemini-3.8-flash",
                     contents=[prompt, image],
+                    config=genai.types.GenerateContentConfig(
+                        max_output_tokens=900,
+                        thinking_config=genai.types.ThinkingConfig(thinking_level="low"),
+                    ),
                 )
             st.session_state["image_ranking"] = (response.text or "ما قدرت أقرأ التخصصات بوضوح.").strip()
         except Exception as error:
@@ -519,75 +637,17 @@ if submitted and study_path == "أكاديمي" and len(strong_subjects) != 3:
 elif submitted and study_path == "أكاديمي" and not (set(strong_subjects) & set(SCIENCE_SUBJECTS)):
     st.error("لازم تكون مادة واحدة على الأقل من اختياراتك علمية: أحياء أو كيمياء أو فيزياء أو علوم بيئية.")
 elif submitted and study_path == "أكاديمي":
-    results = []
-    unmet_official = []
-    normalized_choices = {SUBJECT_ALIASES.get(subject, subject) for subject in strong_subjects}
-    normalized_choices.add("الرياضيات")
-    for name, data in PROGRAMS.items():
-        matching_subjects = sorted(normalized_choices & set(data["مواد"]))
-        subject_match = len(matching_subjects) / max(1, len(data["مواد"]))
-        matching_interests = matching_interest_terms(interests, data["اهتمامات"])
-        interest_match = len(matching_interests) / max(1, len(data["اهتمامات"]))
-        grade_pairs = []
-        for subject in data["مواد"]:
-            grade_key = SUBJECT_ALIASES.get(subject, subject)
-            if grade_key == "الرياضيات":
-                grade_pairs.append((subject, math_grade))
-            else:
-                matching_grade_key = next(
-                    (key for key in subject_grades if SUBJECT_ALIASES.get(key, key) == grade_key),
-                    None,
-                )
-                if matching_grade_key:
-                    grade_pairs.append((subject, subject_grades[matching_grade_key]))
-        grade_coverage = len(grade_pairs) / max(1, len(data["مواد"]))
-        grade_match = sum(grade for _, grade in grade_pairs) / len(grade_pairs) if grade_pairs else 50
-        # Apply every entered subject grade to every related specialty; unknown grades reduce confidence.
-        score = round(average * 0.18 + grade_match * 0.55 + grade_coverage * 17 + subject_match * 5 + interest_match * 5)
-        reasons = []
-        graded_relevant = [f"{subject} ({grade}%)" for subject, grade in grade_pairs]
-        graded_names = {subject for subject, _ in grade_pairs}
-        missing_relevant = [subject for subject in data["مواد"] if subject not in graded_names]
-        if matching_subjects:
-            reasons.append("مواد تناسبك: " + "، ".join(matching_subjects))
-        if graded_relevant:
-            reasons.append("درجات مواد مرتبطة: " + "، ".join(graded_relevant))
-            lowest_relevant = min(grade for _, grade in grade_pairs)
-            if lowest_relevant < 60:
-                lowest_subject = min(
-                    grade_pairs,
-                    key=lambda item: item[1],
-                )
-                reasons.append(f"تنبيه: درجتك في {lowest_subject[0]} منخفضة، لذلك خُفّضت الملاءمة. هذا ليس حد قبول رسميًا.")
-            if missing_relevant:
-                reasons.append("درجات غير مدخلة للمواد المرتبطة: " + "، ".join(missing_relevant) + ".")
-        else:
-            reasons.append("لم تدخل درجات المواد المرتبطة؛ الترتيب أقل دقة ولا يتحقق من شروط القبول")
-        if matching_interests:
-            reasons.append("اهتمامات مشتركة: " + "، ".join(matching_interests))
-        if data.get("متطلبات الدليل"):
-            reasons.append("من دليل الطالب 2026/2027: " + data["متطلبات الدليل"])
-        if data.get("حدود رسمية"):
-            shortfalls = official_requirement_gaps(data, average, subject_grades, math_choice, math_grade)
-            if shortfalls:
-                unmet_official.append((name, shortfalls, data["متطلبات الدليل"]))
-                continue
-            reasons.append("بيانات الدرجات المدخلة تحقق الحدود الدنيا المذكورة في الدليل؛ القبول غير مضمون ويعتمد على المفاضلة والمقاعد.")
-        if not reasons:
-            reasons.append("اقتراح عام بناءً على معدلك؛ أضف موادك واهتماماتك لتحسين الترتيب")
-        results.append((score, name, "؛ ".join(reasons)))
-
     st.subheader("اقتراحاتك")
-    st.caption(f"الميل الذي اخترته: {academic_preference}. هذا تفضيل إرشادي فقط؛ لا يغيّر شروط القبول الرسمية.")
-    st.caption("هذا ترتيب إرشادي للملاءمة، وليس ترتيب قبول. درجة كل مادة مرتبطة تؤثر على جميع التخصصات، والمواد التي لم تُدخل درجتها معلومات ناقصة ولا نفترض أنها مرتفعة. شروط القبول تختلف حسب المؤسسة ورمز البرنامج؛ راجع دليل الطالب الرسمي.")
-    for rank, (score, name, reason) in enumerate(sorted(results, reverse=True)[:20], start=1):
+    st.caption(f"ميولك الأكاديمية: {academic_preference}. ترتّب الخيارات حسب درجات المواد المرتبطة والمواد التي اخترتها وميولك؛ هذا ليس ترتيب قبول رسميًا.")
+    st.caption("أعلى وزن للدرجات والميول: درجة الأحياء ترفع البرامج الحيوية والصحية، بينما الرياضيات والفيزياء ترفع الهندسة. المواد التي لم تدخل درجتها لا تُحسب كأنها مرتفعة.")
+    for rank, (score, name, reason) in enumerate(academic_rankings[:20], start=1):
         with st.container(border=True):
             st.markdown(f"### {rank}. {name}")
             st.progress(score, text=f"التوافق المبدئي: {score}%")
             st.write(reason)
-    if unmet_official:
+    if academic_unmet:
         with st.expander("برامج لم تتحقق شروطها الرسمية أو لا تكفي البيانات للتحقق"):
-            for name, shortfalls, requirement in unmet_official:
+            for name, shortfalls, requirement in academic_unmet:
                 st.markdown(f"**{name}**")
                 st.caption(requirement)
                 st.write("؛ ".join(shortfalls))
