@@ -387,6 +387,7 @@ with st.popover("💬", help="اضغط هنا لفتح مساعد التخصص �
         q = question.strip()
         try:
             from google import genai
+            from google.genai import types
             if not api_key:
                 answer = "لم يُضف مفتاح Gemini بعد. احفظه في Streamlit Secrets باسم GEMINI_API_KEY."
             else:
@@ -405,9 +406,9 @@ with st.popover("💬", help="اضغط هنا لفتح مساعد التخصص �
                     yield from client.models.generate_content_stream(
                         model="gemini-3.5-flash-lite",
                         contents=prompt,
-                        config=genai.types.GenerateContentConfig(
+                        config=types.GenerateContentConfig(
                             max_output_tokens=300,
-                            thinking_config=genai.types.ThinkingConfig(thinking_level="minimal"),
+                            thinking_config=types.ThinkingConfig(thinking_level="minimal"),
                         ),
                     )
                 with st.chat_message("assistant"):
@@ -513,6 +514,7 @@ if ai_rank_requested:
     else:
         try:
             from google import genai
+            from google.genai import types
 
             grades_summary = "، ".join(
                 f"{subject}: {grade}%" for subject, grade in subject_grades.items()
@@ -559,9 +561,9 @@ if ai_rank_requested:
                 response = client.models.generate_content(
                     model="gemini-3.8-flash",
                     contents=prompt,
-                    config=genai.types.GenerateContentConfig(
+                    config=types.GenerateContentConfig(
                         max_output_tokens=1400,
-                        thinking_config=genai.types.ThinkingConfig(thinking_level="low"),
+                        thinking_config=types.ThinkingConfig(thinking_level="low"),
                     ),
                 )
             st.session_state["ai_rank_result"] = (response.text or "ما وصلني ترتيب. حاول مرة أخرى.").strip()
@@ -587,6 +589,7 @@ if rank_image:
     else:
         try:
             from google import genai
+            from google.genai import types
             from PIL import Image
 
             image = Image.open(uploaded_image).convert("RGB")
@@ -621,9 +624,9 @@ if rank_image:
                 response = client.models.generate_content(
                     model="gemini-3.8-flash",
                     contents=[prompt, image],
-                    config=genai.types.GenerateContentConfig(
+                    config=types.GenerateContentConfig(
                         max_output_tokens=900,
-                        thinking_config=genai.types.ThinkingConfig(thinking_level="low"),
+                        thinking_config=types.ThinkingConfig(thinking_level="low"),
                     ),
                 )
             st.session_state["image_ranking"] = (response.text or "ما قدرت أقرأ التخصصات بوضوح.").strip()
