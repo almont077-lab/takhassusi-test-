@@ -1078,3 +1078,12 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+
+st.markdown("""
+<style>
+[data-testid="stPopoverButton"],button[data-testid="stPopoverButton"],[data-testid="stPopoverButton"] > button,[data-testid="stPopoverButton"] button {box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 62px!important;width:62px!important;min-width:62px!important;max-width:62px!important;height:62px!important;min-height:62px!important;max-height:62px!important;aspect-ratio:1/1!important;padding:0!important;border-radius:50%!important;white-space:nowrap!important;overflow:hidden!important;}
+[data-testid="stPopoverButton"] button p {margin:0!important;padding:0!important;line-height:1!important;}
+[data-testid="stPopoverButton"] button [data-testid="stIconMaterial"] {display:none!important;}
+</style>
+""", unsafe_allow_html=True)
