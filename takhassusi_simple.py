@@ -136,8 +136,8 @@ div.stButton > button[kind="primary"] {background:linear-gradient(100deg,#fa4d58
 [data-testid="stProgressBar"] > div > div {background:linear-gradient(90deg,#25a98c,#8be0b9);}
 [data-testid="stMetric"] {background:rgba(25,37,47,.7);padding:.8rem 1rem;border-radius:14px;}
 hr {border-color:rgba(255,255,255,.12);}
-[data-testid="stPopover"] {position:fixed!important;left:18px!important;right:auto!important;bottom:20px!important;top:auto!important;z-index:9999!important;}
-[data-testid="stPopoverButton"] button {width:60px!important;height:60px!important;min-height:60px!important;padding:0!important;border-radius:50%!important;
+[data-testid="stPopover"] {position:fixed!important;left:18px!important;right:auto!important;bottom:20px!important;top:auto!important;z-index:9999!important;width:64px!important;min-width:64px!important;max-width:64px!important;flex:0 0 64px!important;}
+[data-testid="stPopover"] {position:fixed!important;left:18px!important;right:auto!important;bottom:20px!important;top:auto!important;z-index:9999!important;width:64px!important;min-width:64px!important;max-width:64px!important;flex:0 0 64px!important;}
  background:linear-gradient(135deg,#178c75,#35b99a)!important;color:white!important;border:2px solid #c0fff0!important;
  box-shadow:0 8px 28px rgba(0,0,0,.4)!important;font-size:27px!important;}
 [data-testid="stPopoverButton"] button:hover {transform:scale(1.06);}
@@ -1062,3 +1062,19 @@ with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
 st.caption("تخصصي • أداة إرشادية أولية للطالب العُماني")
 
 
+
+
+st.markdown("""
+<style>
+[data-testid="stPopover"] {position:fixed!important;left:18px!important;right:auto!important;bottom:20px!important;top:auto!important;z-index:9999!important;width:64px!important;min-width:64px!important;max-width:64px!important;flex:0 0 64px!important;}
+[data-testid="stPopover"] > div,[data-testid="stPopoverButton"] {width:64px!important;min-width:64px!important;max-width:64px!important;flex:0 0 64px!important;}
+[data-testid="stPopoverButton"] button {box-sizing:border-box!important;display:grid!important;place-items:center!important;flex:0 0 60px!important;width:60px!important;min-width:60px!important;max-width:60px!important;height:60px!important;min-height:60px!important;max-height:60px!important;aspect-ratio:1/1!important;padding:0!important;border-radius:50%!important;white-space:nowrap!important;overflow:hidden!important;}
+[data-testid="stPopoverButton"] button p {margin:0!important;padding:0!important;line-height:1!important;}
+[data-testid="stPopoverButton"] button [data-testid="stIconMaterial"] {display:none!important;}
+@media (max-width:760px) {
+ [data-testid="stPopover"] {left:12px!important;bottom:calc(14px + env(safe-area-inset-bottom))!important;width:66px!important;min-width:66px!important;max-width:66px!important;}
+ [data-testid="stPopover"] > div,[data-testid="stPopoverButton"] {width:66px!important;min-width:66px!important;max-width:66px!important;flex:0 0 66px!important;}
+ [data-testid="stPopoverButton"] button {flex:0 0 62px!important;width:62px!important;min-width:62px!important;max-width:62px!important;height:62px!important;min-height:62px!important;max-height:62px!important;}
+}
+</style>
+""", unsafe_allow_html=True)
