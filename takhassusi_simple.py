@@ -6,7 +6,7 @@ import streamlit as st
 
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
 
-STUDENT_GUIDE_URL = "https://www.heac.gov.om/media/doc/StudentGuide2026.pdf"
+STUDENT_GUIDE_URL = "https://www.heac.gov.om/uploads/15fb0d0c-dacf-4e0e-a4fb-19470ce4d852.pdf"
 STUDENT_GUIDE_ARCHIVE_URL = "https://www.heac.gov.om/student-guide-archive"
 STUDENT_GUIDE_CATALOG_PATH = Path(__file__).with_name("student_guide_catalog_2026_2027.json")
 VOCATIONAL_GUIDE_URLS = {
