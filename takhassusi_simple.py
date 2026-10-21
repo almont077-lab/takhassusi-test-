@@ -7,6 +7,7 @@ import streamlit as st
 st.set_page_config(page_title="تخصصي", page_icon="🎓", layout="wide")
 
 STUDENT_GUIDE_URL = "https://www.heac.gov.om/media/doc/StudentGuide2026.pdf"
+STUDENT_GUIDE_ARCHIVE_URL = "https://www.heac.gov.om/student-guide-archive"
 STUDENT_GUIDE_CATALOG_PATH = Path(__file__).with_name("student_guide_catalog_2026_2027.json")
 VOCATIONAL_GUIDE_URLS = {
     "تقنية المعلومات (BTEC)": "https://home.moe.gov.om/ar/topics/1/show/11909?GetLang=ar",
@@ -932,7 +933,7 @@ elif submitted and study_path == "أكاديمي":
             guide_url = STUDENT_GUIDE_URL + (f"#page={guide_pages[0]}" if guide_pages else "")
             guide_label = "دليل الطالب الرسمي ↗"
             if guide_codes and guide_pages:
-                guide_label = f"الدليل: ص {guide_pages[0]} · رمز {guide_codes[0]} ↗"
+                guide_label = f"صفحة {guide_pages[0]} بالدليل · رمز {guide_codes[0]} ↗"
             st.markdown(
                 f'<div style="display:flex;align-items:baseline;gap:.65rem;flex-wrap:wrap;direction:rtl">'
                 f'<span style="font-size:1.35rem;font-weight:700">{rank}. {name}</span>'
@@ -1045,7 +1046,7 @@ with st.expander("📚 فهرس تخصصات وبرامج دليل الطالب 
         page_number = selected_entry["pages"][0] if selected_entry.get("pages") else None
         if page_number:
             st.markdown(
-                f"[افتح صفحة {page_number} في دليل الطالب الرسمي]({STUDENT_GUIDE_URL}#page={page_number})"
+                f"[افتح صفحة {page_number} مباشرة في دليل الطالب الرسمي]({STUDENT_GUIDE_URL}#page={page_number})"
             )
     else:
         st.info("ملف فهرس دليل الطالب غير موجود بجانب ملف التطبيق.")
@@ -1057,7 +1058,7 @@ with st.expander("ℹ️ كيف تستفيد من النتائج؟"):
         "- دليل الطالب للعام 2026/2027 يعرض البرامج وشروط كل برنامج، وقد تختلف الشروط بين المؤسسات وتتحدث عبر ملاحق؛ اعتمد دائمًا أحدث نسخة.\n"
         "- اسأل مدرستك عن المواد والمسارات المتاحة في محافظتك."
     )
-    st.markdown("[افتح دليل الطالب للقبول الجامعي 2026/2027 (PDF)](" + STUDENT_GUIDE_URL + ")  ·  [ضوابط اختيار المواد 2026/2027 – وزارة التعليم](https://home.moe.gov.om/ar/topics/1/show/13053)")
+    st.markdown("[افتح دليل الطالب الرسمي 2026/2027 (PDF)](" + STUDENT_GUIDE_URL + ")  ·  [أرشيف الأدلة الرسمية](" + STUDENT_GUIDE_ARCHIVE_URL + ")  ·  [ضوابط اختيار المواد 2026/2027 – وزارة التعليم](https://home.moe.gov.om/ar/topics/1/show/13053)")
 st.caption("تخصصي • أداة إرشادية أولية للطالب العُماني")
 
 
